@@ -41,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
@@ -78,7 +79,6 @@ fun InventoryView(dndViewModel: DNDApiViewModel = DNDApiViewModel()) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 16.dp)
             .padding(top = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -86,6 +86,7 @@ fun InventoryView(dndViewModel: DNDApiViewModel = DNDApiViewModel()) {
         Column(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 16.dp)
         ) {
             var selectedRarity by remember { mutableStateOf<String?>(null) }
             var selectedSource by remember { mutableStateOf<String?>(null) }
@@ -172,6 +173,7 @@ fun ItemList(items: List<Item>) {
                 )
             }
         },
+        modifier = Modifier.shadow(16.dp)
     ) { innerPadding ->
         LazyColumn(modifier = Modifier.padding(innerPadding), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             items(items) { item: Item ->
@@ -195,7 +197,7 @@ fun ItemList(items: List<Item>) {
 fun ItemRow(item: Item, selected: Boolean = false, onClick: (Item) -> Unit) {
     Surface(
         border = if (selected) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null,
-        shape = RoundedCornerShape(8.dp),
+        shape = RoundedCornerShape(16.dp),
         shadowElevation = 4.dp,
         onClick = { onClick(item) },
     ) {
