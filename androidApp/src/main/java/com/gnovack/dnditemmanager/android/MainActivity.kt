@@ -45,6 +45,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
 import com.gnovack.dnditemmanager.services.Item
@@ -200,8 +201,12 @@ fun ItemRow(item: Item, selected: Boolean = false, onClick: (Item) -> Unit) {
     ) {
         ListItem(
             headlineContent = { Text(text = item.name ?: "Unknown", fontWeight = FontWeight.Bold) },
-            leadingContent = { Text(text = item.rarity ?: "Unknown") },
-            trailingContent = { Text(text = item.source ?: "Unknown") },
+            trailingContent = { Text(text = item.rarity?.replaceFirstChar { it.uppercase() } ?: "Unknown") },
+            supportingContent = { if (item.description != null) Text(
+                text = item.description!!,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            ) },
         )
     }
 }

@@ -79,5 +79,6 @@ data class Item(
     val name: String? = null,
     val rarity: String? = null,
     val source: String? = null,
+    val description: String? = null,
 )
 
