@@ -10,12 +10,15 @@ import io.ktor.client.request.get
 import io.ktor.http.URLProtocol
 import io.ktor.http.appendPathSegments
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNamingStrategy
 
 expect val platformEngine: HttpClientEngine
 
 class DNDApiClient(engine: HttpClientEngine = platformEngine, baseHost: String = BuildKonfig.BASE_API_HOST) {
+    @OptIn(ExperimentalSerializationApi::class)
     private val client = HttpClient(engine) {
         expectSuccess = true
 
@@ -32,16 +35,19 @@ class DNDApiClient(engine: HttpClientEngine = platformEngine, baseHost: String =
                 prettyPrint = true
                 isLenient = true
                 ignoreUnknownKeys = true
+                namingStrategy = JsonNamingStrategy.SnakeCase
             })
         }
     }
 
-    suspend fun getItems(limit: Int? = null, source: String? = null, rarity: String? = null): List<Item> {
+    suspend fun getItems(limit: Int? = null, search: String? = null, source: String? = null, rarity: String? = null): List<Item> {
         return client.get {
             url {
                 appendPathSegments("items")
 
                 limit?.let { parameters.append("limit", limit.toString())}
+
+                search?.let { parameters.append("search", it)}
                 source?.let { parameters.append("source", it)}
                 rarity?.let { parameters.append("rarity", it)}
             }
@@ -80,5 +86,6 @@ data class Item(
     val rarity: String? = null,
     val source: String? = null,
     val description: String? = null,
+    val imageUrl: String? = null,
 )
 

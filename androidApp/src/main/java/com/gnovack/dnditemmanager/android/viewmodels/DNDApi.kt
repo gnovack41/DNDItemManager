@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.gnovack.dnditemmanager.services.DNDApiClient
 import com.gnovack.dnditemmanager.services.Item
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,14 +23,13 @@ class DNDApiViewModel: ViewModel() {
     private val _filtersLoading = MutableStateFlow(false)
     val filtersLoading: StateFlow<Boolean> = _filtersLoading.asStateFlow()
 
-    fun loadItems(rarity: String? = null, source: String? = null) {
+    fun loadItems(search: String? = null, rarity: String? = null, source: String? = null, onComplete: () -> Unit = {}) {
         viewModelScope.launch(Dispatchers.IO) {
             _itemsLoading.value = true
 
             val result = runCatching {
                 runBlocking {
-                    delay(2000)
-                    client.getItems(limit = 20, rarity = rarity, source = source)
+                    client.getItems(search = search, rarity = rarity, source = source)
                 }
             }
 
@@ -41,11 +39,12 @@ class DNDApiViewModel: ViewModel() {
                 _uiState.value = UIState(error = it.message, filterOptions = _uiState.value.filterOptions)
             }
 
+            onComplete()
             _itemsLoading.value = false
         }
     }
 
-    fun loadFilterOptions() {
+    fun loadFilterOptions(onComplete: () -> Unit = {}) {
         viewModelScope.launch(Dispatchers.IO) {
             _filtersLoading.value = true
 
@@ -64,6 +63,7 @@ class DNDApiViewModel: ViewModel() {
                 _uiState.value = UIState(error = it.message)
             }
 
+            onComplete()
             _filtersLoading.value = false
         }
     }

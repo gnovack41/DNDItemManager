@@ -1,15 +1,21 @@
 package com.gnovack.dnditemmanager.android
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,7 +24,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -29,6 +36,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SearchBar
+import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -41,13 +50,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
 import com.gnovack.dnditemmanager.services.Item
 
@@ -76,6 +88,14 @@ fun InventoryView(dndViewModel: DNDApiViewModel = DNDApiViewModel()) {
 
     var doneFirstLoad by remember { mutableStateOf(false) }
 
+    if (!doneFirstLoad) {
+        dndViewModel.loadItems { doneFirstLoad = true }
+    }
+
+    if (dndUiState.filterOptions.isEmpty()) {
+        dndViewModel.loadFilterOptions()
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -84,27 +104,20 @@ fun InventoryView(dndViewModel: DNDApiViewModel = DNDApiViewModel()) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 16.dp)
+            modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp)
         ) {
             var selectedRarity by remember { mutableStateOf<String?>(null) }
             var selectedSource by remember { mutableStateOf<String?>(null) }
+            var searchQuery by remember { mutableStateOf("") }
 
-            if (dndUiState.filterOptions.isEmpty()) {
-                dndViewModel.loadFilterOptions()
-                if (filtersLoading){
-                    CircularProgressIndicator(
-                        modifier = Modifier
-                            .width(64.dp)
-                            .padding(bottom = 16.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = MaterialTheme.colorScheme.surface,
-                    )
-                    Text(text = "Loading...")
+
+            if (dndUiState.filterOptions.isNotEmpty()) {
+                searchQuery.useDebounce {
+                    dndViewModel.loadItems(search = it, rarity = selectedRarity, source = selectedSource)
                 }
-            }
-            else {
+
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -113,33 +126,50 @@ fun InventoryView(dndViewModel: DNDApiViewModel = DNDApiViewModel()) {
                         modifier = Modifier.weight(1f),
                         name = "Rarity",
                         options = dndUiState.filterOptions["rarities"] ?: emptyList(),
-                        onOptionSelected = { selectedRarity = it },
+                        onOptionSelected = {
+                            selectedRarity = it
+                            dndViewModel.loadItems(search = searchQuery, rarity = it, source = selectedSource)
+                        },
                         enabled = !itemsLoading,
                     )
                     FilterDropDown(
                         modifier = Modifier.weight(1f),
                         name = "Source",
                         options = dndUiState.filterOptions["sources"] ?: emptyList(),
-                        onOptionSelected = { selectedSource = it },
+                        onOptionSelected = {
+                            selectedSource = it
+                            dndViewModel.loadItems(search = searchQuery, rarity = selectedRarity, source = it)
+                        },
                         enabled = !itemsLoading,
                     )
                 }
                 Row {
-                    Button(
+                    SearchBar(
+                        inputField = { SearchBarDefaults.InputField(
+                            query = searchQuery,
+                            onQueryChange = { searchQuery = it },
+                            onSearch = {
+                                dndViewModel.loadItems(
+                                    search = searchQuery,
+                                    rarity = selectedRarity,
+                                    source = selectedSource,
+                                )
+                            },
+                            enabled = !itemsLoading,
+                            expanded = false,
+                            onExpandedChange = {},
+                            leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                            placeholder = { Text(text = "Search") },
+                        ) },
+                        expanded = false,
+                        onExpandedChange = {},
                         modifier = Modifier.weight(1f),
-                        onClick = {
-                            dndViewModel.loadItems(rarity = selectedRarity, source = selectedSource)
-                            doneFirstLoad = true
-                        },
-                        enabled = !itemsLoading,
-                    ) {
-                        Text(text = "Load Items", softWrap = false)
-                    }
+                    ) {}
                 }
             }
         }
 
-        if (itemsLoading) {
+        if (itemsLoading || filtersLoading) {
             CircularProgressIndicator(
                 modifier = Modifier
                     .width(64.dp)
@@ -179,7 +209,7 @@ fun ItemList(items: List<Item>) {
             items(items) { item: Item ->
                 ItemRow(
                     item,
-                    onClick = {
+                    onLongClick = {
                         if (it.id in selectedItemIds) {
                             selectedItemIds -= it.id
                         } else {
@@ -193,17 +223,54 @@ fun ItemList(items: List<Item>) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ItemRow(item: Item, selected: Boolean = false, onClick: (Item) -> Unit) {
+fun ItemRow(item: Item, selected: Boolean = false, onLongClick: (Item) -> Unit) {
+    val context = LocalContext.current
+
     Surface(
         border = if (selected) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null,
         shape = RoundedCornerShape(16.dp),
         shadowElevation = 4.dp,
-        onClick = { onClick(item) },
+        modifier = Modifier.combinedClickable(
+            onClick = { Toast.makeText(context, "Open ${item.name}", Toast.LENGTH_SHORT).show() },
+            onLongClick = { onLongClick(item) }
+        )
     ) {
         ListItem(
             headlineContent = { Text(text = item.name ?: "Unknown", fontWeight = FontWeight.Bold) },
-            trailingContent = { Text(text = item.rarity?.replaceFirstChar { it.uppercase() } ?: "Unknown") },
+            leadingContent = {
+                Column(
+                    Modifier
+                        .height(70.dp)
+                        .width(70.dp), verticalArrangement = Arrangement.Center) {
+                    if (item.imageUrl != null) AsyncImage(
+                        model = item.imageUrl ?: "https://t3.ftcdn.net/jpg/04/60/01/36/360_F_460013622_6xF8uN6ubMvLx0tAJECBHfKPoNOR5cRa.jpg",
+                        contentDescription = null,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .fillMaxHeight()
+                    ) else Icon(
+                        Icons.Default.Info,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .fillMaxSize()
+                            .background(Color.LightGray)
+                            .padding(16.dp)
+                    )
+                }
+            },
+            trailingContent = {
+                Column(
+                    modifier = Modifier.height(70.dp),
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(text = item.rarity?.replace('_', ' ')?.replaceFirstChar(Char::titlecaseChar) ?: "Unknown")
+                    Text(text = item.source?.replace('-', ' ')?.replaceFirstChar(Char::titlecaseChar) ?: "Unknown")
+                }
+            },
             supportingContent = { if (item.description != null) Text(
                 text = item.description!!,
                 maxLines = 2,
@@ -224,13 +291,15 @@ fun FilterDropDown(
     var expanded by remember { mutableStateOf(false) }
     var selectedOption by remember { mutableStateOf("") }
 
+    val formattedSelectedName = selectedOption.replace('_', ' ').replaceFirstChar(Char::titlecaseChar)
+
     val focusManager = LocalFocusManager.current
 
     Box(modifier = modifier) {
         TextField(
             modifier = Modifier.onFocusChanged { expanded = it.isFocused },
             readOnly = true,
-            value = selectedOption,
+            value = formattedSelectedName,
             onValueChange = {},
             label = { Text(text = name) },
             shape = RoundedCornerShape(16.dp),
@@ -259,12 +328,15 @@ fun FilterDropDown(
                 focusManager.clearFocus()
             })
             options.forEach { option ->
-                DropdownMenuItem(text = { Text(option) }, onClick = {
-                    selectedOption = option
-                    onOptionSelected(option)
-                    expanded = false
-                    focusManager.clearFocus()
-                })
+                DropdownMenuItem(
+                    text = { Text(option.replace('_', ' ').replaceFirstChar(Char::titlecaseChar)) },
+                    onClick = {
+                        selectedOption = option
+                        onOptionSelected(option)
+                        expanded = false
+                        focusManager.clearFocus()
+                    }
+                )
             }
         }
     }
