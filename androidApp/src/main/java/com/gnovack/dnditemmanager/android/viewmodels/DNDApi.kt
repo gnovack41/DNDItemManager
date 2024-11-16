@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.gnovack.dnditemmanager.services.DNDApiClient
 import com.gnovack.dnditemmanager.services.Item
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
@@ -24,7 +26,7 @@ class DNDApiViewModel: ViewModel() {
     val filtersLoading: StateFlow<Boolean> = _filtersLoading.asStateFlow()
 
     fun loadItems(search: String? = null, rarity: String? = null, source: String? = null, onComplete: () -> Unit = {}) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _itemsLoading.value = true
 
             val result = runCatching {
@@ -34,9 +36,9 @@ class DNDApiViewModel: ViewModel() {
             }
 
             result.onSuccess {
-                _uiState.value = UIState(items = it, filterOptions = _uiState.value.filterOptions)
+                _uiState.update { state -> state.copy(items = it) }
             }.onFailure {
-                _uiState.value = UIState(error = it.message, filterOptions = _uiState.value.filterOptions)
+                _uiState.update { state -> state.copy(error = it.message) }
             }
 
             onComplete()
@@ -45,11 +47,12 @@ class DNDApiViewModel: ViewModel() {
     }
 
     fun loadFilterOptions(onComplete: () -> Unit = {}) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(Dispatchers.Default) {
             _filtersLoading.value = true
 
             val result = runCatching {
                 runBlocking {
+                    delay(2000)
                     val sources = client.getSources()
                     val rarities = client.getRarities()
 
@@ -58,9 +61,9 @@ class DNDApiViewModel: ViewModel() {
             }
 
             result.onSuccess {
-                _uiState.value = UIState(filterOptions = it)
+                _uiState.update { state -> state.copy(filterOptions = it) }
             }.onFailure {
-                _uiState.value = UIState(error = it.message)
+                _uiState.update { state -> state.copy(error = it.message) }
             }
 
             onComplete()
@@ -69,7 +72,7 @@ class DNDApiViewModel: ViewModel() {
     }
 }
 
-class UIState(
+data class UIState(
     var items: List<Item> = emptyList(),
     var filterOptions: Map<String, List<String>> = emptyMap(),
     var error: String? = null,

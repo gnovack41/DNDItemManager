@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.kotlinSerialization)
 }
 
 android {
@@ -48,5 +49,6 @@ dependencies {
     implementation(libs.ktor.client.android)
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)
+    implementation(libs.androidx.navigation.compose)
     debugImplementation(libs.compose.ui.tooling)
 }
