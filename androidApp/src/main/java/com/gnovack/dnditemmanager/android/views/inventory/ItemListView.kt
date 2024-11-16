@@ -33,25 +33,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gnovack.dnditemmanager.android.components.FilterDropDown
 import com.gnovack.dnditemmanager.android.components.ItemRow
 import com.gnovack.dnditemmanager.android.useDebounce
-import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
+import com.gnovack.dnditemmanager.android.viewmodels.AsyncStateHandler
 import com.gnovack.dnditemmanager.services.Item
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ItemListView(
-    dndViewModel: DNDApiViewModel = viewModel(),
     characterId: String? = null,
+    itemAsyncStateHandler: AsyncStateHandler<String?, List<Item>>,
+    itemsFilterAsyncStateHandler: AsyncStateHandler<Any?, Map<String, List<String>>>,
 ) {
-    val itemsRequestState by dndViewModel.itemsRequestState.collectAsState()
-    val itemFiltersRequestState by dndViewModel.itemFiltersRequestState.collectAsState()
+    val itemsRequestState by itemAsyncStateHandler.uiState.collectAsState()
+    val itemFiltersRequestState by itemsFilterAsyncStateHandler.uiState.collectAsState()
 
     LaunchedEffect(key1 = Unit) {
-        dndViewModel.loadItems()
-        dndViewModel.loadFilterOptions()
+        itemAsyncStateHandler.executeRequest()
+        itemsFilterAsyncStateHandler.executeRequest()
     }
 
     Column(
@@ -67,7 +67,7 @@ fun ItemListView(
             filterOptions = itemFiltersRequestState.data ?: emptyMap()
         ) {
             search, rarity, source ->
-            dndViewModel.loadItems(search, rarity, source)
+            itemAsyncStateHandler.executeRequest(search, rarity, source)
         }
 
         if (itemsRequestState.isLoading || itemFiltersRequestState.isLoading) {
