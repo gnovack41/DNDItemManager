@@ -23,6 +23,7 @@ import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -41,18 +42,15 @@ import com.gnovack.dnditemmanager.services.Item
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun ItemListView(dndViewModel: DNDApiViewModel = viewModel(), characterId: String? = null) {
-    val dndUiState by dndViewModel.uiState.collectAsState()
-    val itemsLoading by dndViewModel.itemsLoading.collectAsState()
-    val filtersLoading by dndViewModel.filtersLoading.collectAsState()
+fun ItemListView(
+    dndViewModel: DNDApiViewModel = viewModel(),
+    characterId: String? = null,
+) {
+    val itemsRequestState by dndViewModel.itemsRequestState.collectAsState()
+    val itemFiltersRequestState by dndViewModel.itemFiltersRequestState.collectAsState()
 
-    var doneFirstLoad by remember { mutableStateOf(false) }
-
-    if (!doneFirstLoad) {
-        dndViewModel.loadItems { doneFirstLoad = true }
-    }
-
-    if (dndUiState.filterOptions.isEmpty()) {
+    LaunchedEffect(key1 = Unit) {
+        dndViewModel.loadItems()
         dndViewModel.loadFilterOptions()
     }
 
@@ -63,12 +61,16 @@ fun ItemListView(dndViewModel: DNDApiViewModel = viewModel(), characterId: Strin
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        ItemSearchBar(itemsLoading = itemsLoading, filtersLoading = filtersLoading, filterOptions = dndUiState.filterOptions) {
+        ItemSearchBar(
+            itemsLoading = itemsRequestState.isLoading,
+            filtersLoading = itemFiltersRequestState.isLoading,
+            filterOptions = itemFiltersRequestState.data ?: emptyMap()
+        ) {
             search, rarity, source ->
             dndViewModel.loadItems(search, rarity, source)
         }
 
-        if (itemsLoading || filtersLoading) {
+        if (itemsRequestState.isLoading || itemFiltersRequestState.isLoading) {
             CircularProgressIndicator(
                 modifier = Modifier
                     .width(64.dp)
@@ -77,11 +79,11 @@ fun ItemListView(dndViewModel: DNDApiViewModel = viewModel(), characterId: Strin
                 trackColor = MaterialTheme.colorScheme.surface,
             )
             Text(text = "Loading...")
-        } else if (dndUiState.items.isNotEmpty()) {
-            ItemList(items = dndUiState.items)
-        } else if (dndUiState.error != null) {
-            Text(text = "Error: ${dndUiState.error}")
-        } else if (doneFirstLoad) {
+        } else if (itemsRequestState.data?.isNotEmpty() == true) {
+            ItemList(items = itemsRequestState.data!!)
+        } else if (itemsRequestState.isFailed) {
+            Text(text = "Error: ${itemsRequestState.error!!.message}")
+        } else if (itemsRequestState.isSuccessful) {
             Text(text = "No items found")
         }
     }
@@ -90,7 +92,12 @@ fun ItemListView(dndViewModel: DNDApiViewModel = viewModel(), characterId: Strin
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ItemSearchBar(itemsLoading: Boolean, filtersLoading: Boolean, filterOptions: Map<String, List<String>>, onQueryChange: (String?, String?, String?) -> Unit) {
+fun ItemSearchBar(
+    itemsLoading: Boolean,
+    filtersLoading: Boolean,
+    filterOptions: Map<String, List<String>>,
+    onQueryChange: (String?, String?, String?) -> Unit,
+) {
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -100,11 +107,11 @@ fun ItemSearchBar(itemsLoading: Boolean, filtersLoading: Boolean, filterOptions:
     ) {
         var selectedRarity by remember { mutableStateOf<String?>(null) }
         var selectedSource by remember { mutableStateOf<String?>(null) }
-        var searchQuery by remember { mutableStateOf("") }
+        var searchQuery by remember { mutableStateOf<String?>(null) }
 
         val isLoading = itemsLoading || filtersLoading
 
-        searchQuery.useDebounce { onQueryChange(it, selectedRarity, selectedSource) }
+        searchQuery.useDebounce { if (it != null) onQueryChange(it, selectedRarity, selectedSource) }
 
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -135,7 +142,7 @@ fun ItemSearchBar(itemsLoading: Boolean, filtersLoading: Boolean, filterOptions:
             SearchBar(
                 inputField = {
                     SearchBarDefaults.InputField(
-                        query = searchQuery,
+                        query = searchQuery ?: "",
                         onQueryChange = { searchQuery = it },
                         onSearch = { onQueryChange(searchQuery, selectedRarity, selectedSource) },
                         expanded = false,

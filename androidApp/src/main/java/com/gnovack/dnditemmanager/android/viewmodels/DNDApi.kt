@@ -4,76 +4,99 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gnovack.dnditemmanager.services.DNDApiClient
 import com.gnovack.dnditemmanager.services.Item
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+
+
+data class AsyncUiState<T>(
+    val data: T? = null,
+    val isSuccessful: Boolean = false,
+    val isLoading: Boolean = false,
+    val isFailed: Boolean = false,
+    val error: Exception? = null,
+    internal var job: Job? = null,
+)
+
 
 class DNDApiViewModel: ViewModel() {
     private val client = DNDApiClient()
 
-    private val _uiState = MutableStateFlow(UIState())
-    val uiState: StateFlow<UIState> = _uiState.asStateFlow()
+    private val _itemsRequestState = MutableStateFlow(AsyncUiState<List<Item>>())
+    val itemsRequestState: StateFlow<AsyncUiState<List<Item>>> = _itemsRequestState.asStateFlow()
 
-    private val _itemsLoading = MutableStateFlow(false)
-    val itemsLoading: StateFlow<Boolean> = _itemsLoading.asStateFlow()
+    private val _itemFiltersRequestState = MutableStateFlow(AsyncUiState<Map<String, List<String>>>())
+    val itemFiltersRequestState: StateFlow<AsyncUiState<Map<String, List<String>>>> = _itemFiltersRequestState.asStateFlow()
 
-    private val _filtersLoading = MutableStateFlow(false)
-    val filtersLoading: StateFlow<Boolean> = _filtersLoading.asStateFlow()
+    private fun <T> doBaseRequest(
+        uiState: MutableStateFlow<AsyncUiState<T>>,
+        request: suspend () -> T,
+        onComplete: () -> Unit = {},
+    ) {
+        uiState.value.job?.cancel()
 
-    fun loadItems(search: String? = null, rarity: String? = null, source: String? = null, onComplete: () -> Unit = {}) {
-        viewModelScope.launch(Dispatchers.Default) {
-            _itemsLoading.value = true
+        uiState.update { state -> state.copy(isLoading = true) }
 
-            val result = runCatching {
-                runBlocking {
-                    client.getItems(search = search, rarity = rarity, source = source)
-                }
+        val requestJob = viewModelScope.launch {
+            try {
+                uiState.update { state -> state.copy(isSuccessful = true, data = request()) }
+                onComplete()
+            } catch (e: Exception) {
+                uiState.update { state -> state.copy(isFailed = true, error = e) }
             }
 
-            result.onSuccess {
-                _uiState.update { state -> state.copy(items = it) }
-            }.onFailure {
-                _uiState.update { state -> state.copy(error = it.message) }
-            }
-
-            onComplete()
-            _itemsLoading.value = false
+            uiState.update { state -> state.copy(isLoading = false) }
         }
+
+        uiState.value.job = requestJob
     }
 
-    fun loadFilterOptions(onComplete: () -> Unit = {}) {
-        viewModelScope.launch(Dispatchers.Default) {
-            _filtersLoading.value = true
+//    class AsyncStateHandler<T>(
+//        private val scope: CoroutineScope,
+//        private val request: suspend (args: Any) -> T,
+//    ) {
+//        private val _uiState = MutableStateFlow(AsyncUiState<T>())
+//        val uiState: StateFlow<AsyncUiState<T>> = _uiState.asStateFlow()
+//
+//        fun executeRequest(vararg args: Any?, onComplete: () -> Unit = {}) {
+//            _uiState.value.job?.cancel()
+//
+//            _uiState.update { state -> state.copy(isLoading = true) }
+//
+//            val requestJob = scope.launch {
+//                try {
+//                    _uiState.update { state -> state.copy(isSuccessful = true, data = request(args)) }
+//                    onComplete()
+//                } catch (e: Exception) {
+//                    _uiState.update { state -> state.copy(isFailed = true, error = e) }
+//                }
+//
+//                _uiState.update { state -> state.copy(isLoading = false) }
+//            }
+//
+//            _uiState.value.job = requestJob
+//        }
+//    }
+//
+//    fun <T> useAsyncUiState(request: suspend (args: Any?) -> T) = AsyncStateHandler(viewModelScope, request)
 
-            val result = runCatching {
-                runBlocking {
-                    delay(2000)
-                    val sources = client.getSources()
-                    val rarities = client.getRarities()
+    fun loadItems(
+        search: String? = null,
+        rarity: String? = null,
+        source: String? = null,
+        onComplete: () -> Unit = {},
+    ) = doBaseRequest(
+        uiState = _itemsRequestState,
+        request = { client.getItems(search = search, rarity = rarity, source = source) },
+        onComplete = onComplete
+    )
 
-                    return@runBlocking mapOf(Pair("sources", sources), Pair("rarities", rarities))
-                }
-            }
-
-            result.onSuccess {
-                _uiState.update { state -> state.copy(filterOptions = it) }
-            }.onFailure {
-                _uiState.update { state -> state.copy(error = it.message) }
-            }
-
-            onComplete()
-            _filtersLoading.value = false
-        }
-    }
+    fun loadFilterOptions(onComplete: () -> Unit = {}) = doBaseRequest(
+        uiState = _itemFiltersRequestState,
+        request = { mapOf("sources" to client.getSources(), "rarities" to client.getRarities()) },
+        onComplete = onComplete
+    )
 }
-
-data class UIState(
-    var items: List<Item> = emptyList(),
-    var filterOptions: Map<String, List<String>> = emptyMap(),
-    var error: String? = null,
-)
