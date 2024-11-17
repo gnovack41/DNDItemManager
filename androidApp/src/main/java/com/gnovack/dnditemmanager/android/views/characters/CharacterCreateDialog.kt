@@ -2,13 +2,17 @@ package com.gnovack.dnditemmanager.android.views.characters
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -23,6 +27,7 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.window.core.layout.WindowWidthSizeClass
 import com.gnovack.dnditemmanager.android.components.RoundedTextField
 
 
@@ -31,6 +36,8 @@ fun CharacterCreateDialog(
     closeDialog: () -> Unit,
     onSubmit: (Character) -> Unit,
 ) {
+    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+
     var characterName by rememberSaveable { mutableStateOf("") }
     var characterRace by rememberSaveable { mutableStateOf("") }
     var characterClass by rememberSaveable { mutableStateOf("") }
@@ -55,6 +62,7 @@ fun CharacterCreateDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(32.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
                 Text(
                     text = "Create New Character",
@@ -62,20 +70,45 @@ fun CharacterCreateDialog(
                     fontSize = TextUnit(24f, TextUnitType.Sp)
                 )
 
-                RoundedTextField(
-                    value = characterName,
-                    onValueChange = { characterName = it },
-                    name = "Name",
-                    supportingText = "Required",
-                    isError = (characterName.isNotBlank() || isSubmitted) && !newCharacter.nameField.isValid
-                )
-                RoundedTextField(
-                    value = characterRace,
-                    onValueChange = { characterRace = it },
-                    name = "Race",
-                    supportingText = "Required",
-                    isError = (characterRace.isNotBlank() || isSubmitted) && !newCharacter.raceField.isValid
-                )
+                if (windowSizeClass.windowWidthSizeClass != WindowWidthSizeClass.COMPACT) {
+                    Row (
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        RoundedTextField(
+                            value = characterName,
+                            onValueChange = { characterName = it },
+                            name = "Name",
+                            supportingText = "Required",
+                            isError = (characterName.isNotBlank() || isSubmitted) && !newCharacter.nameField.isValid,
+                            modifier = Modifier.weight(1f)
+                        )
+                        RoundedTextField(
+                            value = characterRace,
+                            onValueChange = { characterRace = it },
+                            name = "Race",
+                            supportingText = "Required",
+                            isError = (characterRace.isNotBlank() || isSubmitted) && !newCharacter.raceField.isValid,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                } else {
+                    RoundedTextField(
+                        value = characterName,
+                        onValueChange = { characterName = it },
+                        name = "Name",
+                        supportingText = "Required",
+                        isError = (characterName.isNotBlank() || isSubmitted) && !newCharacter.nameField.isValid
+                    )
+                    RoundedTextField(
+                        value = characterRace,
+                        onValueChange = { characterRace = it },
+                        name = "Race",
+                        supportingText = "Required",
+                        isError = (characterRace.isNotBlank() || isSubmitted) && !newCharacter.raceField.isValid
+                    )
+                }
                 RoundedTextField(
                     value = characterClass,
                     onValueChange = { characterClass = it },

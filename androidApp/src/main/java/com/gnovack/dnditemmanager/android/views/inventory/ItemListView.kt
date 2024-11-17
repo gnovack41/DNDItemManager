@@ -37,7 +37,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gnovack.dnditemmanager.android.components.FilterDropDown
@@ -229,7 +228,6 @@ fun ItemList(
                 onClick = { onAddToInventory(selectedItems.toList()) },
             )
         },
-        modifier = Modifier.shadow(16.dp)
     ) { innerPadding ->
         LazyColumn(modifier = Modifier.padding(innerPadding), verticalArrangement = Arrangement.spacedBy(16.dp)) {
             items(items) { item: Item ->

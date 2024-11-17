@@ -34,7 +34,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -65,7 +64,6 @@ fun CharacterListView(
                 },
             )
         },
-        modifier = Modifier.shadow(16.dp)
     ) { innerPadding ->
         Column(
             modifier = Modifier.padding(innerPadding).fillMaxWidth(),

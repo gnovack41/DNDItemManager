@@ -1,6 +1,7 @@
 package com.gnovack.dnditemmanager.android.components
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
@@ -40,7 +41,9 @@ fun FilterDropDown(
 
     Box(modifier = modifier) {
         TextField(
-            modifier = Modifier.onFocusChanged { expanded = it.isFocused },
+            modifier = Modifier
+                .fillMaxWidth()
+                .onFocusChanged { expanded = it.isFocused },
             readOnly = true,
             value = formattedSelectedName,
             onValueChange = {},
