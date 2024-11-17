@@ -28,8 +28,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -40,7 +42,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gnovack.dnditemmanager.android.components.FilterDropDown
 import com.gnovack.dnditemmanager.android.components.ItemRow
 import com.gnovack.dnditemmanager.android.useDebounce
-import com.gnovack.dnditemmanager.android.viewmodels.AsyncStateHandler
 import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
 import com.gnovack.dnditemmanager.android.views.characters.Character
 import com.gnovack.dnditemmanager.services.Item
@@ -50,10 +51,24 @@ import com.gnovack.dnditemmanager.services.Item
 fun ItemListView(
     viewModel: DNDApiViewModel = viewModel(),
     currentCharacter: Character,
-    itemAsyncStateHandler: AsyncStateHandler<String?, List<Item>>,
-    itemsFilterAsyncStateHandler: AsyncStateHandler<Any?, Map<String, List<String>>>,
     onNavigateToCharacterList: () -> Unit,
 ) {
+    val itemAsyncStateHandler by remember {
+        derivedStateOf { viewModel.useAsyncUiState { args: List<String?> ->
+            val search: String? = args.getOrNull(0)
+            val rarity: String? = args.getOrNull(1)
+            val source: String? = args.getOrNull(2)
+
+            viewModel.client.getItems(search = search, rarity = rarity, source = source)
+        } }
+    }
+
+    val itemsFilterAsyncStateHandler by remember {
+        derivedStateOf { viewModel.useAsyncUiState<Nothing, Map<String, List<String>>> {
+            mapOf("sources" to viewModel.client.getSources(), "rarities" to viewModel.client.getRarities())
+        } }
+    }
+
     val itemsRequestState by itemAsyncStateHandler.uiState.collectAsState()
     val itemFiltersRequestState by itemsFilterAsyncStateHandler.uiState.collectAsState()
 

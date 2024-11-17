@@ -4,9 +4,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
@@ -51,27 +48,9 @@ fun DNDNavHost(
         modifier = modifier,
     ) {
         composable<ItemList> {
-            val itemAsyncStateHandler by remember {
-                derivedStateOf { viewModel.useAsyncUiState { args: List<String?> ->
-                    val search: String? = args.getOrNull(0)
-                    val rarity: String? = args.getOrNull(1)
-                    val source: String? = args.getOrNull(2)
-
-                    viewModel.client.getItems(search = search, rarity = rarity, source = source)
-                } }
-            }
-
-            val itemFilterAsyncStateHandler by remember {
-                derivedStateOf { viewModel.useAsyncUiState<Any?, Map<String, List<String>>> {
-                    mapOf("sources" to viewModel.client.getSources(), "rarities" to viewModel.client.getRarities())
-                } }
-            }
-
             ItemListView(
                 viewModel = viewModel,
                 currentCharacter = viewModel.selectedCharacter!!,
-                itemAsyncStateHandler = itemAsyncStateHandler,
-                itemsFilterAsyncStateHandler = itemFilterAsyncStateHandler,
                 onNavigateToCharacterList = {
                     navController.navigate(CharacterList)
                 }
