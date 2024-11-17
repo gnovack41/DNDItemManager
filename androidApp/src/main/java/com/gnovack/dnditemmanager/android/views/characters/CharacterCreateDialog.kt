@@ -12,6 +12,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -34,6 +35,14 @@ fun CharacterCreateDialog(
     var characterClass by rememberSaveable { mutableStateOf("") }
     var characterLevel: Int? by rememberSaveable { mutableStateOf(null) }
 
+    var isSubmitted by remember { mutableStateOf(false) }
+
+    val newCharacter = Character(
+        name = characterName,
+        dndClass = characterClass,
+        level = characterLevel ?: 0,
+    )
+
     Dialog(onDismissRequest = closeDialog) {
         Surface(
             shape = RoundedCornerShape(16.dp),
@@ -41,36 +50,48 @@ fun CharacterCreateDialog(
             Column(
                 verticalArrangement = Arrangement.spacedBy(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth().padding(32.dp)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(32.dp)
             ) {
                 Text(
                     text = "Create New Character",
                     fontWeight = FontWeight.Bold,
                     fontSize = TextUnit(24f, TextUnitType.Sp)
                 )
+
                 RoundedTextField(
                     value = characterName,
                     onValueChange = { characterName = it },
                     name = "Character Name",
+                    supportingText = "Required",
+                    isError = (characterName.isNotBlank() || isSubmitted) && !newCharacter.nameField.isValid
                 )
                 RoundedTextField(
                     value = characterClass,
                     onValueChange = { characterClass = it },
                     name = "Character Class",
+                    supportingText = "Required",
+                    isError = (characterClass.isNotBlank() || isSubmitted) && !newCharacter.classField.isValid
                 )
                 RoundedTextField(
                     value = characterLevel?.toString() ?: "",
-                    onValueChange = { characterLevel = it.toInt() },
+                    onValueChange = { characterLevel = it.toIntOrNull() },
                     name = "Character Level",
+                    supportingText = "Required",
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    isError = (characterLevel != null || isSubmitted) && !newCharacter.levelField.isValid,
                 )
 
                 Button(
-                    onClick = { onSubmit(Character(
-                        name = characterName,
-                        dndClass = characterClass,
-                        level = characterLevel!!,
-                    ))},
+                    onClick = {
+                        isSubmitted = true
+                        if (newCharacter.isValid) onSubmit(Character(
+                            name = characterName,
+                            dndClass = characterClass,
+                            level = characterLevel!!,
+                        ))
+                    },
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(text = "Submit")

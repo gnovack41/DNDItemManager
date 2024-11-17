@@ -14,23 +14,28 @@ import androidx.compose.ui.unit.dp
 fun RoundedTextField(
     modifier: Modifier = Modifier,
     value: String,
+    supportingText: String? = null,
     name: String? = null,
     enabled: Boolean = true,
     onValueChange: (String) -> Unit,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    isError: Boolean = false,
 ) {
     TextField(
         value = value,
         onValueChange = onValueChange,
         label = { if (name != null) Text(text = name) },
+        supportingText = { if (supportingText != null) Text(text = supportingText) },
         shape = RoundedCornerShape(16.dp),
         colors = TextFieldDefaults.colors(
             focusedIndicatorColor = Color.Transparent,
             unfocusedIndicatorColor = Color.Transparent,
             disabledIndicatorColor = Color.Transparent,
+            errorIndicatorColor = Color.Transparent,
         ),
         enabled = enabled,
         keyboardOptions = keyboardOptions,
+        isError = isError,
         modifier = modifier,
     )
 }
