@@ -13,22 +13,21 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 
-data class AsyncUiState<T>(
-    val data: T? = null,
-    val isSuccessful: Boolean = false,
-    val isLoading: Boolean = false,
-    val isFailed: Boolean = false,
-    val error: Exception? = null,
-    internal var job: Job? = null,
-)
-
-
 class AsyncStateHandler<P, T>(
     private val scope: CoroutineScope,
     private val request: suspend (args: List<P?>) -> T,
     private val _uiState: MutableStateFlow<AsyncUiState<T>> = MutableStateFlow(AsyncUiState()),
     val uiState: StateFlow<AsyncUiState<T>> = _uiState.asStateFlow()
 ) {
+    data class AsyncUiState<T>(
+        val data: T? = null,
+        val isSuccessful: Boolean = false,
+        val isLoading: Boolean = false,
+        val isFailed: Boolean = false,
+        val error: Exception? = null,
+        internal var job: Job? = null,
+    )
+
     private fun resetUiState(isLoading: Boolean = false) {
         _uiState.update { state ->
             state.copy(
