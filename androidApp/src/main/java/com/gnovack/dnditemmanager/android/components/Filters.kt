@@ -27,14 +27,14 @@ import androidx.compose.ui.unit.dp
 fun FilterDropDown(
     modifier: Modifier = Modifier,
     name: String,
+    value: String,
     options: List<String>,
     enabled: Boolean = true,
     onOptionSelected: (String?) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var selectedOption by remember { mutableStateOf("") }
 
-    val formattedSelectedName = selectedOption.replace('_', ' ').replaceFirstChar(Char::titlecaseChar)
+    val formattedSelectedName = value.replace('_', ' ').replaceFirstChar(Char::titlecaseChar)
 
     val focusManager = LocalFocusManager.current
 
@@ -65,7 +65,6 @@ fun FilterDropDown(
             focusManager.clearFocus()
         }) {
             DropdownMenuItem(text = { Text("Any") }, onClick = {
-                selectedOption = ""
                 onOptionSelected(null)
                 expanded = false
                 focusManager.clearFocus()
@@ -74,7 +73,6 @@ fun FilterDropDown(
                 DropdownMenuItem(
                     text = { Text(option.replace('_', ' ').replaceFirstChar(Char::titlecaseChar)) },
                     onClick = {
-                        selectedOption = option
                         onOptionSelected(option)
                         expanded = false
                         focusManager.clearFocus()

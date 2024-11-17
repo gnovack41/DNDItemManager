@@ -87,5 +87,18 @@ data class Item(
     val source: String? = null,
     val description: String? = null,
     val imageUrl: String? = null,
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as Item
+
+        return id == other.id
+    }
+
+    override fun hashCode(): Int {
+        return id.hashCode()
+    }
+}
 

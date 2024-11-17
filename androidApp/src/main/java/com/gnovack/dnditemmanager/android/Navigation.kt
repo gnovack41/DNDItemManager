@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -34,6 +35,7 @@ object CharacterCreate
 
 @Composable
 fun DNDNavHost(
+    modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     viewModel: DNDApiViewModel = viewModel(),
 ) {
@@ -46,6 +48,7 @@ fun DNDNavHost(
         exitTransition = {
             fadeOut(animationSpec = tween(300))
         },
+        modifier = modifier,
     ) {
         composable<ItemList> {
             val itemAsyncStateHandler by remember {

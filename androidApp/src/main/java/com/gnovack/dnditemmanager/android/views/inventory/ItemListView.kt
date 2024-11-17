@@ -30,16 +30,16 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gnovack.dnditemmanager.android.components.FilterDropDown
 import com.gnovack.dnditemmanager.android.components.ItemRow
 import com.gnovack.dnditemmanager.android.useDebounce
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gnovack.dnditemmanager.android.viewmodels.AsyncStateHandler
 import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
 import com.gnovack.dnditemmanager.android.views.characters.Character
@@ -56,9 +56,7 @@ fun ItemListView(
     val itemsRequestState by itemAsyncStateHandler.uiState.collectAsState()
     val itemFiltersRequestState by itemsFilterAsyncStateHandler.uiState.collectAsState()
 
-    val existingInventoryMap by viewModel.characterItemMap.collectAsState()
-
-    val selectedCharacter: Character? by viewModel.selectedCharacter.collectAsState()
+    val selectedCharacter: Character? = viewModel.selectedCharacter
 
     LaunchedEffect(key1 = Unit) {
         itemAsyncStateHandler.executeRequest()
@@ -66,15 +64,13 @@ fun ItemListView(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 16.dp),
+        modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Row (
             horizontalArrangement = Arrangement.Start,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Button(onClick = onNavigateToCharacterList) {
                 Row(
@@ -107,7 +103,7 @@ fun ItemListView(
         } else if (itemsRequestState.data?.isNotEmpty() == true) {
             ItemList(
                 items = itemsRequestState.data!!,
-                existingInventory = existingInventoryMap[selectedCharacter?.id] ?: emptyList(),
+                existingInventory = selectedCharacter?.inventory ?: emptyList(),
                 onAddToInventory = { newItems ->
                     viewModel.addItemsToSelectedCharacterInventory(newItems)
                     onNavigateToCharacterList()
@@ -133,13 +129,11 @@ fun ItemSearchBar(
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 8.dp)
+        modifier = Modifier.padding(bottom = 8.dp)
     ) {
-        var selectedRarity by remember { mutableStateOf<String?>(null) }
-        var selectedSource by remember { mutableStateOf<String?>(null) }
-        var searchQuery by remember { mutableStateOf<String?>(null) }
+        var selectedRarity by rememberSaveable { mutableStateOf<String?>(null) }
+        var selectedSource by rememberSaveable { mutableStateOf<String?>(null) }
+        var searchQuery by rememberSaveable { mutableStateOf<String?>(null) }
 
         val isLoading = itemsLoading || filtersLoading
 
@@ -152,6 +146,7 @@ fun ItemSearchBar(
             FilterDropDown(
                 modifier = Modifier.weight(1f),
                 name = "Rarity",
+                value = selectedRarity ?: "",
                 options = filterOptions["rarities"] ?: emptyList(),
                 onOptionSelected = {
                     selectedRarity = it
@@ -162,6 +157,7 @@ fun ItemSearchBar(
             FilterDropDown(
                 modifier = Modifier.weight(1f),
                 name = "Source",
+                value = selectedSource ?: "",
                 options = filterOptions["sources"] ?: emptyList(),
                 onOptionSelected = {
                     selectedSource = it
@@ -197,10 +193,10 @@ fun ItemSearchBar(
 @Composable
 fun ItemList(
     items: List<Item>,
-    existingInventory: List<String>,
-    onAddToInventory: (List<String>) -> Unit,
+    existingInventory: List<Item>,
+    onAddToInventory: (List<Item>) -> Unit,
 ) {
-    var selectedItemIds by remember { mutableStateOf(existingInventory.toSet()) }
+    var selectedItems by rememberSaveable { mutableStateOf(existingInventory.toSet()) }
 
     Scaffold(
         floatingActionButton = {
@@ -208,7 +204,7 @@ fun ItemList(
                 text = { Text(text = "Update Inventory") },
                 icon = { Icon(Icons.Default.Edit, contentDescription = "Test") },
                 shape = RoundedCornerShape(16.dp),
-                onClick = { onAddToInventory(selectedItemIds.toList()) },
+                onClick = { onAddToInventory(selectedItems.toList()) },
             )
         },
         modifier = Modifier.shadow(16.dp)
@@ -218,13 +214,13 @@ fun ItemList(
                 ItemRow(
                     item,
                     onLongClick = {
-                        if (it.id in selectedItemIds) {
-                            selectedItemIds -= it.id
+                        if (it in selectedItems) {
+                            selectedItems -= it
                         } else {
-                            selectedItemIds += it.id
+                            selectedItems += it
                         }
                     },
-                    selected = item.id in selectedItemIds,
+                    selected = item in selectedItems,
                 )
             }
         }

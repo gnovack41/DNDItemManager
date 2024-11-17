@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
 
+
 @Composable
 fun CharacterListView(
     viewModel: DNDApiViewModel = viewModel(),
@@ -32,13 +33,9 @@ fun CharacterListView(
     onOpenCharacterCreateDialog: () -> Unit,
 ) {
     val characterList by viewModel.characterList.collectAsState()
-    val itemsByCharacter by viewModel.characterItemMap.collectAsState()
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .padding(top = 16.dp),
+        modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
@@ -54,27 +51,40 @@ fun CharacterListView(
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             items(characterList){ character ->
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    border = BorderStroke(1.dp, Color.LightGray),
-                    modifier = Modifier.fillMaxWidth(),
+                CharacterListItem(
+                    character = character,
                     onClick = { onNavigateToItemList(character) },
-                ) {
-                    ListItem(
-                        headlineContent = { Text("Name: ${character.name}", fontWeight = FontWeight.Bold) },
-                        supportingContent = { Text("Class: ${character.dndClass} (${character.level})") },
-                        trailingContent = {
-                            Text(
-                                "# Items: ${itemsByCharacter[character.id]?.size ?: 0}",
-                                fontSize = TextUnit(14f, TextUnitType.Sp)
-                            )
-                        },
-                        modifier = Modifier
-                            .padding(16.dp)
-                            .fillMaxWidth(),
-                    )
-                }
+                )
             }
         }
+    }
+}
+
+
+@Composable
+fun CharacterListItem(
+    character: Character,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit,
+) {
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.dp, Color.LightGray),
+        modifier = modifier.fillMaxWidth(),
+        onClick = onClick,
+    ) {
+        ListItem(
+            headlineContent = { Text("Name: ${character.name}", fontWeight = FontWeight.Bold) },
+            supportingContent = { Text("Class: ${character.dndClass} (${character.level})") },
+            trailingContent = {
+                Text(
+                    "# Items: ${character.inventory.size}",
+                    fontSize = TextUnit(14f, TextUnitType.Sp)
+                )
+            },
+            modifier = Modifier
+                .padding(16.dp)
+                .fillMaxWidth(),
+        )
     }
 }
