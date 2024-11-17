@@ -2,6 +2,7 @@ package com.gnovack.dnditemmanager.android.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gnovack.dnditemmanager.android.views.characters.Character
 import com.gnovack.dnditemmanager.services.DNDApiClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -65,6 +66,34 @@ class AsyncStateHandler<P, T>(
 
 class DNDApiViewModel: ViewModel() {
     val client = DNDApiClient()
+
+    private var _characterList: MutableStateFlow<List<Character>> = MutableStateFlow(listOf())
+    val characterList: StateFlow<List<Character>> = _characterList.asStateFlow()
+
+    private var _characterItemMap: MutableStateFlow<MutableMap<Int, List<String>>> = MutableStateFlow(mutableMapOf())
+    val characterItemMap: StateFlow<MutableMap<Int, List<String>>> = _characterItemMap.asStateFlow()
+
+    private var _selectedCharacter: MutableStateFlow<Character?> = MutableStateFlow(null)
+    val selectedCharacter: StateFlow<Character?> = _selectedCharacter.asStateFlow()
+
+    fun addCharacter(character: Character) {
+        character.id = _characterList.value.size + 1
+        _characterItemMap.update { map -> (map + (character.id!! to listOf())) as MutableMap}
+        _characterList.value += character
+    }
+
+    fun addItemsToSelectedCharacterInventory(items: List<String>) {
+        if (selectedCharacter.value == null) return
+
+        val updateMap = _characterItemMap.value.toMutableMap()
+        updateMap[_selectedCharacter.value!!.id!!] = items
+
+        _characterItemMap.value = updateMap
+    }
+
+    fun setSelectedCharacter(character: Character) {
+        _selectedCharacter.value = character
+    }
 
     fun <P, T> useAsyncUiState(request: suspend (args: List<P?>) -> T) = AsyncStateHandler(viewModelScope, request)
 }

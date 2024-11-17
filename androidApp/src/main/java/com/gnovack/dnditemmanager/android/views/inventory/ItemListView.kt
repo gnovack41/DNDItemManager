@@ -5,14 +5,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -36,18 +39,26 @@ import androidx.compose.ui.unit.dp
 import com.gnovack.dnditemmanager.android.components.FilterDropDown
 import com.gnovack.dnditemmanager.android.components.ItemRow
 import com.gnovack.dnditemmanager.android.useDebounce
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gnovack.dnditemmanager.android.viewmodels.AsyncStateHandler
+import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
+import com.gnovack.dnditemmanager.android.views.characters.Character
 import com.gnovack.dnditemmanager.services.Item
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ItemListView(
-    characterId: String? = null,
+    viewModel: DNDApiViewModel = viewModel(),
     itemAsyncStateHandler: AsyncStateHandler<String?, List<Item>>,
     itemsFilterAsyncStateHandler: AsyncStateHandler<Any?, Map<String, List<String>>>,
+    onNavigateToCharacterList: () -> Unit,
 ) {
     val itemsRequestState by itemAsyncStateHandler.uiState.collectAsState()
     val itemFiltersRequestState by itemsFilterAsyncStateHandler.uiState.collectAsState()
+
+    val existingInventoryMap by viewModel.characterItemMap.collectAsState()
+
+    val selectedCharacter: Character? by viewModel.selectedCharacter.collectAsState()
 
     LaunchedEffect(key1 = Unit) {
         itemAsyncStateHandler.executeRequest()
@@ -61,6 +72,20 @@ fun ItemListView(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
+        Row (
+            horizontalArrangement = Arrangement.Start,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+        ) {
+            Button(onClick = onNavigateToCharacterList) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    Text(text = "Back")
+                }
+            }
+        }
         ItemSearchBar(
             itemsLoading = itemsRequestState.isLoading,
             filtersLoading = itemFiltersRequestState.isLoading,
@@ -80,7 +105,14 @@ fun ItemListView(
             )
             Text(text = "Loading...")
         } else if (itemsRequestState.data?.isNotEmpty() == true) {
-            ItemList(items = itemsRequestState.data!!)
+            ItemList(
+                items = itemsRequestState.data!!,
+                existingInventory = existingInventoryMap[selectedCharacter?.id] ?: emptyList(),
+                onAddToInventory = { newItems ->
+                    viewModel.addItemsToSelectedCharacterInventory(newItems)
+                    onNavigateToCharacterList()
+                },
+            )
         } else if (itemsRequestState.isFailed) {
             Text(text = "Error: ${itemsRequestState.error!!.message}")
         } else if (itemsRequestState.isSuccessful) {
@@ -163,19 +195,21 @@ fun ItemSearchBar(
 
 
 @Composable
-fun ItemList(items: List<Item>) {
-    var selectedItemIds by remember { mutableStateOf<Set<String>>(mutableSetOf()) }
+fun ItemList(
+    items: List<Item>,
+    existingInventory: List<String>,
+    onAddToInventory: (List<String>) -> Unit,
+) {
+    var selectedItemIds by remember { mutableStateOf(existingInventory.toSet()) }
 
     Scaffold(
         floatingActionButton = {
-            if (selectedItemIds.isNotEmpty()) {
-                ExtendedFloatingActionButton(
-                    text = { Text(text = "Add ${selectedItemIds.size} Item${if (selectedItemIds.size > 1) "s" else ""} to Inventory") },
-                    icon = { Icon(Icons.Default.Add, contentDescription = "Test") },
-                    shape = RoundedCornerShape(16.dp),
-                    onClick = { /*TODO*/ },
-                )
-            }
+            ExtendedFloatingActionButton(
+                text = { Text(text = "Update Inventory") },
+                icon = { Icon(Icons.Default.Edit, contentDescription = "Test") },
+                shape = RoundedCornerShape(16.dp),
+                onClick = { onAddToInventory(selectedItemIds.toList()) },
+            )
         },
         modifier = Modifier.shadow(16.dp)
     ) { innerPadding ->

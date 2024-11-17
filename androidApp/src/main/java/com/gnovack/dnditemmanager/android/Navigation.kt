@@ -1,5 +1,8 @@
 package com.gnovack.dnditemmanager.android
 
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -8,19 +11,25 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.toRoute
 import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
+import com.gnovack.dnditemmanager.android.views.characters.CharacterCreateDialog
 import com.gnovack.dnditemmanager.android.views.characters.CharacterListView
 import com.gnovack.dnditemmanager.android.views.inventory.ItemListView
 import kotlinx.serialization.Serializable
 
 
 @Serializable
-data class ItemList(val characterId: String = "TEMP")
+object ItemList
+
 
 @Serializable
 object CharacterList
+
+
+@Serializable
+object CharacterCreate
 
 
 @Composable
@@ -31,10 +40,14 @@ fun DNDNavHost(
     NavHost(
         navController = navController,
         startDestination = CharacterList,
+        enterTransition = {
+            fadeIn(animationSpec = tween(300))
+        },
+        exitTransition = {
+            fadeOut(animationSpec = tween(300))
+        },
     ) {
-        composable<ItemList> { backStackEntry ->
-            val itemList: ItemList = backStackEntry.toRoute()
-
+        composable<ItemList> {
             val itemAsyncStateHandler by remember {
                 derivedStateOf { viewModel.useAsyncUiState { args: List<String?> ->
                     val search: String? = args.getOrNull(0)
@@ -52,12 +65,36 @@ fun DNDNavHost(
             }
 
             ItemListView(
-                characterId = itemList.characterId,
+                viewModel = viewModel,
                 itemAsyncStateHandler = itemAsyncStateHandler,
                 itemsFilterAsyncStateHandler = itemFilterAsyncStateHandler,
+                onNavigateToCharacterList = {
+                    navController.navigate(CharacterList)
+                }
             )
         }
 
-        composable<CharacterList> { CharacterListView(onNavigateToItemList = { navController.navigate(ItemList(it))}) }
+        composable<CharacterList> {
+            CharacterListView(
+                viewModel = viewModel,
+                onNavigateToItemList = { character ->
+                    viewModel.setSelectedCharacter(character)
+                    navController.navigate(ItemList)
+                },
+                onOpenCharacterCreateDialog = {
+                    navController.navigate(CharacterCreate)
+                }
+            )
+        }
+
+        dialog<CharacterCreate> {
+            CharacterCreateDialog(
+                closeDialog = { navController.navigate(CharacterList) },
+                onSubmit = { character ->
+                    viewModel.addCharacter(character)
+                    navController.navigate(CharacterList)
+                }
+            )
+        }
     }
 }
