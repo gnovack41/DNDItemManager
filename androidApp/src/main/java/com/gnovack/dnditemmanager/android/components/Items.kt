@@ -38,7 +38,10 @@ fun ItemRow(item: Item, selected: Boolean = false, onLongClick: (Item) -> Unit) 
     val context = LocalContext.current
 
     Surface(
-        border = BorderStroke(1.dp, if (selected) MaterialTheme.colorScheme.primary else Color.LightGray),
+        border = BorderStroke(
+            if (selected) 3.dp else 1.dp,
+            if (selected) MaterialTheme.colorScheme.primary else Color.LightGray
+        ),
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.combinedClickable(
             onClick = { Toast.makeText(context, "Open ${item.name}", Toast.LENGTH_SHORT).show() },

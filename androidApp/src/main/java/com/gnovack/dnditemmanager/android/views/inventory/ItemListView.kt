@@ -49,14 +49,13 @@ import com.gnovack.dnditemmanager.services.Item
 @Composable
 fun ItemListView(
     viewModel: DNDApiViewModel = viewModel(),
+    currentCharacter: Character,
     itemAsyncStateHandler: AsyncStateHandler<String?, List<Item>>,
     itemsFilterAsyncStateHandler: AsyncStateHandler<Any?, Map<String, List<String>>>,
     onNavigateToCharacterList: () -> Unit,
 ) {
     val itemsRequestState by itemAsyncStateHandler.uiState.collectAsState()
     val itemFiltersRequestState by itemsFilterAsyncStateHandler.uiState.collectAsState()
-
-    val selectedCharacter: Character? = viewModel.selectedCharacter
 
     LaunchedEffect(key1 = Unit) {
         itemAsyncStateHandler.executeRequest()
@@ -103,7 +102,7 @@ fun ItemListView(
         } else if (itemsRequestState.data?.isNotEmpty() == true) {
             ItemList(
                 items = itemsRequestState.data!!,
-                existingInventory = selectedCharacter?.inventory ?: emptyList(),
+                existingInventory = currentCharacter.inventory,
                 onAddToInventory = { newItems ->
                     viewModel.addItemsToSelectedCharacterInventory(newItems)
                     onNavigateToCharacterList()

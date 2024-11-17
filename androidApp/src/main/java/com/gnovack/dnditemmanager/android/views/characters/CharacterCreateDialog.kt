@@ -32,6 +32,7 @@ fun CharacterCreateDialog(
     onSubmit: (Character) -> Unit,
 ) {
     var characterName by rememberSaveable { mutableStateOf("") }
+    var characterRace by rememberSaveable { mutableStateOf("") }
     var characterClass by rememberSaveable { mutableStateOf("") }
     var characterLevel: Int? by rememberSaveable { mutableStateOf(null) }
 
@@ -39,6 +40,7 @@ fun CharacterCreateDialog(
 
     val newCharacter = Character(
         name = characterName,
+        race = characterRace,
         dndClass = characterClass,
         level = characterLevel ?: 0,
     )
@@ -63,21 +65,28 @@ fun CharacterCreateDialog(
                 RoundedTextField(
                     value = characterName,
                     onValueChange = { characterName = it },
-                    name = "Character Name",
+                    name = "Name",
                     supportingText = "Required",
                     isError = (characterName.isNotBlank() || isSubmitted) && !newCharacter.nameField.isValid
                 )
                 RoundedTextField(
+                    value = characterRace,
+                    onValueChange = { characterRace = it },
+                    name = "Race",
+                    supportingText = "Required",
+                    isError = (characterRace.isNotBlank() || isSubmitted) && !newCharacter.raceField.isValid
+                )
+                RoundedTextField(
                     value = characterClass,
                     onValueChange = { characterClass = it },
-                    name = "Character Class",
+                    name = "Class",
                     supportingText = "Required",
                     isError = (characterClass.isNotBlank() || isSubmitted) && !newCharacter.classField.isValid
                 )
                 RoundedTextField(
                     value = characterLevel?.toString() ?: "",
                     onValueChange = { characterLevel = it.toIntOrNull() },
-                    name = "Character Level",
+                    name = "Level",
                     supportingText = "Required",
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                     isError = (characterLevel != null || isSubmitted) && !newCharacter.levelField.isValid,
@@ -86,11 +95,7 @@ fun CharacterCreateDialog(
                 Button(
                     onClick = {
                         isSubmitted = true
-                        if (newCharacter.isValid) onSubmit(Character(
-                            name = characterName,
-                            dndClass = characterClass,
-                            level = characterLevel!!,
-                        ))
+                        if (newCharacter.isValid) onSubmit(newCharacter)
                     },
                     modifier = Modifier.fillMaxWidth()
                 ) {

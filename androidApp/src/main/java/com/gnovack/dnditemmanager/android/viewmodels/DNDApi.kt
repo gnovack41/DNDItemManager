@@ -74,6 +74,9 @@ class AsyncStateHandler<P, T>(
 class DNDApiViewModel: ViewModel() {
     val client = DNDApiClient()
 
+    private val currentMaxCharacterId: Int
+        get() = characterList.value.maxOfOrNull { it.id ?: 0 } ?: 0
+
     private var _characterList: MutableStateFlow<List<Character>> = MutableStateFlow(listOf())
     val characterList: StateFlow<List<Character>> = _characterList.asStateFlow()
 
@@ -84,8 +87,12 @@ class DNDApiViewModel: ViewModel() {
         get() = characterList.value.find { character -> character.id == selectedCharacterId.value }
 
     fun addCharacter(character: Character) {
-        character.id = _characterList.value.size + 1
+        character.id = currentMaxCharacterId + 1
         _characterList.value += character
+    }
+
+    fun removeCharacters(characters: List<Character>) {
+        _characterList.value -= characters
     }
 
     fun addItemsToSelectedCharacterInventory(items: List<Item>) {

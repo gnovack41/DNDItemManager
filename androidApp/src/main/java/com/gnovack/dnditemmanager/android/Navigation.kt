@@ -69,6 +69,7 @@ fun DNDNavHost(
 
             ItemListView(
                 viewModel = viewModel,
+                currentCharacter = viewModel.selectedCharacter!!,
                 itemAsyncStateHandler = itemAsyncStateHandler,
                 itemsFilterAsyncStateHandler = itemFilterAsyncStateHandler,
                 onNavigateToCharacterList = {
