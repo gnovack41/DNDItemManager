@@ -14,6 +14,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -72,11 +73,6 @@ fun ItemListView(
     val itemsRequestState by itemAsyncStateHandler.uiState.collectAsState()
     val itemFiltersRequestState by itemsFilterAsyncStateHandler.uiState.collectAsState()
 
-    LaunchedEffect(key1 = Unit) {
-        itemAsyncStateHandler.executeRequest()
-        itemsFilterAsyncStateHandler.executeRequest()
-    }
-
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -99,7 +95,8 @@ fun ItemListView(
         ItemSearchBar(
             itemsLoading = itemsRequestState.isLoading,
             filtersLoading = itemFiltersRequestState.isLoading,
-            filterOptions = itemFiltersRequestState.data ?: emptyMap()
+            filterOptions = itemFiltersRequestState.data ?: emptyMap(),
+            loadFilters = { itemsFilterAsyncStateHandler.executeRequest() }
         ) {
             search, rarity, source ->
             itemAsyncStateHandler.executeRequest(search, rarity, source)
@@ -124,7 +121,16 @@ fun ItemListView(
                 },
             )
         } else if (itemsRequestState.isFailed) {
-            Text(text = "Error: ${itemsRequestState.error!!.message}")
+            Text(text = "An error has occurred")
+            Button(onClick = { itemAsyncStateHandler.executeRequest() }) {
+                Row (
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ){
+                    Icon(Icons.Default.Refresh, contentDescription = null)
+                    Text(text = "Retry")
+                }
+            }
         } else if (itemsRequestState.isSuccessful) {
             Text(text = "No items found")
         }
@@ -138,6 +144,7 @@ fun ItemSearchBar(
     itemsLoading: Boolean,
     filtersLoading: Boolean,
     filterOptions: Map<String, List<String>>,
+    loadFilters: () -> Unit,
     onQueryChange: (String?, String?, String?) -> Unit,
 ) {
     Column(
@@ -148,10 +155,17 @@ fun ItemSearchBar(
         var selectedRarity by rememberSaveable { mutableStateOf<String?>(null) }
         var selectedSource by rememberSaveable { mutableStateOf<String?>(null) }
         var searchQuery by rememberSaveable { mutableStateOf<String?>(null) }
+        var debouncedSearch by rememberSaveable { mutableStateOf<String?>(null) }
 
         val isLoading = itemsLoading || filtersLoading
 
-        searchQuery.useDebounce { if (it != null) onQueryChange(it, selectedRarity, selectedSource) }
+        searchQuery.useDebounce { debouncedSearch = it }
+
+        LaunchedEffect(Unit) { loadFilters() }
+
+        LaunchedEffect(debouncedSearch, selectedRarity, selectedSource) {
+            onQueryChange(debouncedSearch, selectedRarity, selectedSource)
+        }
 
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -162,10 +176,7 @@ fun ItemSearchBar(
                 name = "Rarity",
                 value = selectedRarity ?: "",
                 options = filterOptions["rarities"] ?: emptyList(),
-                onOptionSelected = {
-                    selectedRarity = it
-                    onQueryChange(searchQuery, selectedRarity, selectedSource)
-                },
+                onOptionSelected = { selectedRarity = it },
                 enabled = !isLoading,
             )
             FilterDropDown(
@@ -173,10 +184,7 @@ fun ItemSearchBar(
                 name = "Source",
                 value = selectedSource ?: "",
                 options = filterOptions["sources"] ?: emptyList(),
-                onOptionSelected = {
-                    selectedSource = it
-                    onQueryChange(searchQuery, selectedRarity, selectedSource)
-                },
+                onOptionSelected = { selectedSource = it },
                 enabled = !isLoading,
             )
         }

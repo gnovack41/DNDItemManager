@@ -24,8 +24,6 @@ private const val CHARACTER_LIST_FILE = "characterList.json"
 class AsyncStateHandler<P, T>(
     private val scope: CoroutineScope,
     private val request: suspend (args: List<P?>) -> T,
-    private val _uiState: MutableStateFlow<AsyncUiState<T>> = MutableStateFlow(AsyncUiState()),
-    val uiState: StateFlow<AsyncUiState<T>> = _uiState.asStateFlow()
 ) {
     data class AsyncUiState<T>(
         val data: T? = null,
@@ -35,6 +33,9 @@ class AsyncStateHandler<P, T>(
         val error: Exception? = null,
         internal var job: Job? = null,
     )
+
+    private val _uiState: MutableStateFlow<AsyncUiState<T>> = MutableStateFlow(AsyncUiState())
+    val uiState: StateFlow<AsyncUiState<T>> = _uiState.asStateFlow()
 
     private fun resetUiState(isLoading: Boolean = false) {
         _uiState.update { state ->
