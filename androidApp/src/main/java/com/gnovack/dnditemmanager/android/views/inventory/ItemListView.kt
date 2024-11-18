@@ -157,10 +157,8 @@ fun ItemSearchBar(
         var selectedRarity by rememberSaveable { mutableStateOf<String?>(null) }
         var selectedSource by rememberSaveable { mutableStateOf<String?>(null) }
         var searchQuery by rememberSaveable { mutableStateOf<String?>(null) }
+
         var debouncedSearch by rememberSaveable { mutableStateOf<String?>(null) }
-
-        val isLoading = itemsLoading || filtersLoading
-
         searchQuery.useDebounce { debouncedSearch = it }
 
         LaunchedEffect(Unit) { loadFilters() }
@@ -168,6 +166,8 @@ fun ItemSearchBar(
         LaunchedEffect(debouncedSearch, selectedRarity, selectedSource) {
             onQueryChange(debouncedSearch, selectedRarity, selectedSource)
         }
+
+        val isLoading = itemsLoading || filtersLoading
 
         Row(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -226,7 +226,7 @@ fun ItemList(
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 text = { Text(text = "Update Inventory") },
-                icon = { Icon(Icons.Default.Edit, contentDescription = "Test") },
+                icon = { Icon(Icons.Default.Edit, contentDescription = null) },
                 shape = RoundedCornerShape(16.dp),
                 onClick = { onAddToInventory(selectedItems.toList()) },
             )
