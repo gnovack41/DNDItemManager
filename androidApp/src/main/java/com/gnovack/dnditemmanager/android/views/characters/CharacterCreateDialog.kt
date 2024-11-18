@@ -14,6 +14,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,29 +28,37 @@ import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.TextUnitType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.gnovack.dnditemmanager.android.components.RoundedTextField
+import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
 
 
 @Composable
-fun CharacterCreateDialog(
+fun CharacterCreateOrUpdateDialog(
+    viewModel: DNDApiViewModel = viewModel(),
+    characterId: Int? = null,
     closeDialog: () -> Unit,
     onSubmit: (Character) -> Unit,
 ) {
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
 
-    var characterName by rememberSaveable { mutableStateOf("") }
-    var characterRace by rememberSaveable { mutableStateOf("") }
-    var characterClass by rememberSaveable { mutableStateOf("") }
-    var characterLevel: Int? by rememberSaveable { mutableStateOf(null) }
+    val existingCharacter: Character? by remember { derivedStateOf { viewModel.getCharacterById(characterId) } }
+
+    var characterName by rememberSaveable { mutableStateOf(existingCharacter?.name ?: "") }
+    var characterRace by rememberSaveable { mutableStateOf(existingCharacter?.race ?: "") }
+    var characterClass by rememberSaveable { mutableStateOf(existingCharacter?.dndClass ?: "") }
+    var characterLevel: Int? by rememberSaveable { mutableStateOf(existingCharacter?.level) }
 
     var isSubmitted by remember { mutableStateOf(false) }
 
     val newCharacter = Character(
+        id = existingCharacter?.id,
         name = characterName,
         race = characterRace,
         dndClass = characterClass,
         level = characterLevel ?: 0,
+        inventory = existingCharacter?.inventory ?: emptyList(),
     )
 
     Dialog(onDismissRequest = closeDialog) {

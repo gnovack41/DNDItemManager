@@ -43,16 +43,19 @@ import com.gnovack.dnditemmanager.android.components.FilterDropDown
 import com.gnovack.dnditemmanager.android.components.ItemRow
 import com.gnovack.dnditemmanager.android.useDebounce
 import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
-import com.gnovack.dnditemmanager.android.views.characters.Character
 import com.gnovack.dnditemmanager.services.Item
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun ItemListView(
     viewModel: DNDApiViewModel = viewModel(),
-    currentCharacter: Character,
+    characterId: Int,
     onNavigateToCharacterList: () -> Unit,
 ) {
+    val currentCharacter by remember {
+        derivedStateOf { viewModel.getCharacterById(characterId)!! }
+    }
+
     val itemAsyncStateHandler by remember {
         derivedStateOf { viewModel.useAsyncUiState { args: List<String?> ->
             val search: String? = args.getOrNull(0)
@@ -115,7 +118,7 @@ fun ItemListView(
                 items = itemsRequestState.data!!,
                 existingInventory = currentCharacter.inventory,
                 onAddToInventory = { newItems ->
-                    viewModel.addItemsToSelectedCharacterInventory(newItems)
+                    viewModel.addItemsToCharacterInventory(characterId, newItems)
                     onNavigateToCharacterList()
                 },
             )

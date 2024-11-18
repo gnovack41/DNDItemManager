@@ -44,7 +44,7 @@ import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
 @Composable
 fun CharacterListView(
     viewModel: DNDApiViewModel = viewModel(),
-    onNavigateToItemList: (Character) -> Unit,
+    onNavigateToCharacterDetails: (Int) -> Unit,
     onOpenCharacterCreateDialog: () -> Unit,
 ) {
     val characterList by viewModel.characterList.collectAsState()
@@ -91,7 +91,7 @@ fun CharacterListView(
                     CharacterListItem(
                         character = character,
                         selected = character in selectedCharacters,
-                        onClick = { onNavigateToItemList(character) },
+                        onClick = { onNavigateToCharacterDetails(character.id!!) },
                         onLongClick = {
                             if (character in selectedCharacters) selectedCharacters -= character
                             else selectedCharacters += character

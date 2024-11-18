@@ -11,15 +11,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.toRoute
 import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
-import com.gnovack.dnditemmanager.android.views.characters.CharacterCreateDialog
+import com.gnovack.dnditemmanager.android.views.characters.CharacterCreateOrUpdateDialog
+import com.gnovack.dnditemmanager.android.views.characters.CharacterDetailsView
 import com.gnovack.dnditemmanager.android.views.characters.CharacterListView
 import com.gnovack.dnditemmanager.android.views.inventory.ItemListView
 import kotlinx.serialization.Serializable
-
-
-@Serializable
-object ItemList
 
 
 @Serializable
@@ -27,7 +25,15 @@ object CharacterList
 
 
 @Serializable
-object CharacterCreate
+data class CharacterDetails(val characterId: Int)
+
+
+@Serializable
+data class ItemList(val characterId: Int)
+
+
+@Serializable
+data class CharacterCreateOrUpdate(val characterId: Int? = null)
 
 
 @Composable
@@ -47,35 +53,56 @@ fun DNDNavHost(
         },
         modifier = modifier,
     ) {
-        composable<ItemList> {
-            ItemListView(
+        composable<CharacterList> {
+            CharacterListView(
                 viewModel = viewModel,
-                currentCharacter = viewModel.selectedCharacter!!,
+                onNavigateToCharacterDetails = { characterId ->
+                    navController.navigate(CharacterDetails(characterId))
+                },
+                onOpenCharacterCreateDialog = {
+                    navController.navigate(CharacterCreateOrUpdate())
+                }
+            )
+        }
+
+        composable<CharacterDetails> { backStackEntry ->
+            val characterId = backStackEntry.toRoute<CharacterDetails>().characterId
+
+            CharacterDetailsView(
+                viewModel = viewModel,
+                characterId = characterId,
+                onNavigateToItemList = {
+                    navController.navigate(ItemList(characterId))
+                },
+                onOpenCharacterUpdateDialog = {
+                    navController.navigate(CharacterCreateOrUpdate(characterId))
+                },
                 onNavigateToCharacterList = {
                     navController.navigate(CharacterList)
                 }
             )
         }
 
-        composable<CharacterList> {
-            CharacterListView(
+        composable<ItemList> { backStackEntry ->
+            val characterId = backStackEntry.toRoute<ItemList>().characterId
+
+            ItemListView(
                 viewModel = viewModel,
-                onNavigateToItemList = { character ->
-                    viewModel.setSelectedCharacter(character)
-                    navController.navigate(ItemList)
-                },
-                onOpenCharacterCreateDialog = {
-                    navController.navigate(CharacterCreate)
+                characterId = characterId,
+                onNavigateToCharacterList = {
+                    navController.navigate(CharacterDetails(characterId))
                 }
             )
         }
 
-        dialog<CharacterCreate> {
-            CharacterCreateDialog(
-                closeDialog = { navController.navigate(CharacterList) },
+        dialog<CharacterCreateOrUpdate> { backStackEntry ->
+            CharacterCreateOrUpdateDialog(
+                viewModel = viewModel,
+                characterId = backStackEntry.toRoute<CharacterCreateOrUpdate>().characterId,
+                closeDialog = { navController.navigateUp() },
                 onSubmit = { character ->
-                    viewModel.addCharacter(character)
-                    navController.navigate(CharacterList)
+                    val updatedCharacter = viewModel.updateOrCreateCharacter(character)
+                    navController.navigate(CharacterDetails(updatedCharacter.id!!))
                 }
             )
         }

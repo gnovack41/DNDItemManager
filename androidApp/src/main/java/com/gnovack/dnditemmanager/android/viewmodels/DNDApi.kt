@@ -81,35 +81,41 @@ class DNDApiViewModel: ViewModel() {
     private var _characterList: MutableStateFlow<List<Character>> = MutableStateFlow(listOf())
     val characterList: StateFlow<List<Character>> = _characterList.asStateFlow()
 
-    private var _selectedCharacterId: MutableStateFlow<Int?> = MutableStateFlow(null)
-    val selectedCharacterId: StateFlow<Int?> = _selectedCharacterId.asStateFlow()
+    fun getCharacterById(id: Int?): Character? {
+        return characterList.value.find { character -> character.id == id }
+    }
 
-    val selectedCharacter: Character?
-        get() = characterList.value.find { character -> character.id == selectedCharacterId.value }
+    fun updateOrCreateCharacter(character: Character): Character {
+        val existingCharacterIndex = characterList.value.indexOf(character)
 
-    fun addCharacter(character: Character) {
-        character.id = currentMaxCharacterId + 1
-        _characterList.value += character
+        if (existingCharacterIndex == -1) {
+            character.id = currentMaxCharacterId + 1
+            _characterList.value += character
+        } else {
+            _characterList.update { list ->
+                list as MutableList
+                list.apply {
+                    set(existingCharacterIndex, character)
+                }
+            }
+        }
+
+        return character
     }
 
     fun removeCharacters(characters: List<Character>) {
         _characterList.value -= characters
     }
 
-    fun addItemsToSelectedCharacterInventory(items: List<Item>) {
+    fun addItemsToCharacterInventory(characterId: Int, items: List<Item>) {
         _characterList.update { list ->
-            list.map { character ->
-                if (character.id == _selectedCharacterId.value) {
-                    character.apply { inventory = items }
-                }
+            val index = list.indexOfFirst { it.id == characterId }
 
-                return@map character
+            list as MutableList
+            list.apply {
+                set(index, list[index].copy(inventory = items))
             }
         }
-    }
-
-    fun setSelectedCharacter(character: Character) {
-        _selectedCharacterId.value = character.id
     }
 
     fun saveCharacterList(context: Context) {
