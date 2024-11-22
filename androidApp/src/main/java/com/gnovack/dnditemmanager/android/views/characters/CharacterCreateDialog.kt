@@ -22,6 +22,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.TextUnit
@@ -31,6 +32,8 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.gnovack.dnditemmanager.android.components.RoundedTextField
+import com.gnovack.dnditemmanager.android.components.SelectInput
+import com.gnovack.dnditemmanager.android.getObjectFromJsonAssetFile
 import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
 
 
@@ -42,6 +45,7 @@ fun CharacterCreateOrUpdateDialog(
     onSubmit: (Character) -> Unit,
 ) {
     val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+    val context = LocalContext.current
 
     val existingCharacter: Character? by remember { derivedStateOf { viewModel.getCharacterById(characterId) } }
 
@@ -51,6 +55,14 @@ fun CharacterCreateOrUpdateDialog(
     var characterLevel: Int? by rememberSaveable { mutableStateOf(existingCharacter?.level) }
 
     var isSubmitted by remember { mutableStateOf(false) }
+
+    val classOptions by remember { derivedStateOf {
+        getObjectFromJsonAssetFile<List<String>>(context, "classes.json")
+    } }
+
+    val raceOptions by remember { derivedStateOf {
+        getObjectFromJsonAssetFile<List<String>>(context, "races.json")
+    } }
 
     val newCharacter = Character(
         id = existingCharacter?.id,
@@ -93,13 +105,14 @@ fun CharacterCreateOrUpdateDialog(
                             isError = (characterName.isNotBlank() || isSubmitted) && !newCharacter.nameField.isValid,
                             modifier = Modifier.weight(1f)
                         )
-                        RoundedTextField(
-                            value = characterRace,
-                            onValueChange = { characterRace = it },
+                        SelectInput(
                             name = "Race",
-                            supportingText = "Required",
+                            value = characterRace,
+                            options = raceOptions,
+                            onOptionSelected = { characterRace = it ?: "" },
                             isError = (characterRace.isNotBlank() || isSubmitted) && !newCharacter.raceField.isValid,
-                            modifier = Modifier.weight(1f)
+                            supportingText = "Required",
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 } else {
@@ -110,20 +123,22 @@ fun CharacterCreateOrUpdateDialog(
                         supportingText = "Required",
                         isError = (characterName.isNotBlank() || isSubmitted) && !newCharacter.nameField.isValid
                     )
-                    RoundedTextField(
-                        value = characterRace,
-                        onValueChange = { characterRace = it },
+                    SelectInput(
                         name = "Race",
+                        value = characterRace,
+                        options = raceOptions,
+                        onOptionSelected = { characterRace = it ?: "" },
+                        isError = (characterRace.isNotBlank() || isSubmitted) && !newCharacter.raceField.isValid,
                         supportingText = "Required",
-                        isError = (characterRace.isNotBlank() || isSubmitted) && !newCharacter.raceField.isValid
                     )
                 }
-                RoundedTextField(
-                    value = characterClass,
-                    onValueChange = { characterClass = it },
+                SelectInput(
                     name = "Class",
+                    value = characterClass,
+                    options = classOptions,
+                    onOptionSelected = { characterClass = it ?: "" },
+                    isError = (characterRace.isNotBlank() || isSubmitted) && !newCharacter.classField.isValid,
                     supportingText = "Required",
-                    isError = (characterClass.isNotBlank() || isSubmitted) && !newCharacter.classField.isValid
                 )
                 RoundedTextField(
                     value = characterLevel?.toString() ?: "",

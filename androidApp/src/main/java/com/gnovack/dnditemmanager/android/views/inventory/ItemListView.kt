@@ -39,8 +39,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.gnovack.dnditemmanager.android.components.FilterDropDown
 import com.gnovack.dnditemmanager.android.components.ItemRow
+import com.gnovack.dnditemmanager.android.components.SelectInput
 import com.gnovack.dnditemmanager.android.useDebounce
 import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
 import com.gnovack.dnditemmanager.services.Item
@@ -173,7 +173,7 @@ fun ItemSearchBar(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            FilterDropDown(
+            SelectInput(
                 modifier = Modifier.weight(1f),
                 name = "Rarity",
                 value = selectedRarity ?: "",
@@ -181,7 +181,7 @@ fun ItemSearchBar(
                 onOptionSelected = { selectedRarity = it },
                 enabled = !isLoading,
             )
-            FilterDropDown(
+            SelectInput(
                 modifier = Modifier.weight(1f),
                 name = "Source",
                 value = selectedSource ?: "",

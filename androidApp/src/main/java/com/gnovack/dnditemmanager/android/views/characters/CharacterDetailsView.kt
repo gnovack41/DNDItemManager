@@ -130,14 +130,22 @@ fun CharacterDetailsView(
                 }
             }
         }
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            items(character.inventory) { item ->
-                ItemRow(
-                    item = item,
-                    onLongClick = {},
-                )
+        Column {
+            Text(
+                "Inventory",
+                fontSize = MaterialTheme.typography.labelLarge.fontSize,
+                fontWeight = MaterialTheme.typography.labelLarge.fontWeight,
+                color = MaterialTheme.typography.labelLarge.color
+            )
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                items(character.inventory) { item ->
+                    ItemRow(
+                        item = item,
+                        onLongClick = {},
+                    )
+                }
             }
         }
     }
