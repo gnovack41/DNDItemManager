@@ -33,11 +33,6 @@ fun <T> T.useDebounce(
     return state
 }
 
-
-class FormField<T>(value: T, rule: (T) -> Boolean) {
-    val isValid = rule(value)
-}
-
 fun AssetManager.readAssetsFileAsString(fileName: String): String = open(fileName).bufferedReader().use {
     it.readText()
 }
@@ -59,3 +54,5 @@ private val RARITY_TO_DISPLAY_NAME = mapOf(
 )
 
 fun rarityToDisplayName(rarity: String): String = RARITY_TO_DISPLAY_NAME.getOrDefault(rarity, "Unknown")
+
+fun parseDndBeyondCharacterUrl(url: String) = url.replace(" ", "").split("/").last()

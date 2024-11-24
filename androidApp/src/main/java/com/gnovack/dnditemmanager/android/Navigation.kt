@@ -15,6 +15,7 @@ import androidx.navigation.toRoute
 import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
 import com.gnovack.dnditemmanager.android.views.characters.CharacterCreateOrUpdateDialog
 import com.gnovack.dnditemmanager.android.views.characters.CharacterDetailsView
+import com.gnovack.dnditemmanager.android.views.characters.CharacterImportDialog
 import com.gnovack.dnditemmanager.android.views.characters.CharacterListView
 import com.gnovack.dnditemmanager.android.views.inventory.ItemDetailsView
 import com.gnovack.dnditemmanager.android.views.inventory.ItemListView
@@ -26,15 +27,18 @@ object CharacterList
 
 
 @Serializable
-data class CharacterDetails(val characterId: Int)
+data class CharacterDetails(val characterId: String)
 
 
 @Serializable
-data class ItemList(val characterId: Int)
+data class ItemList(val characterId: String)
 
 
 @Serializable
-data class CharacterCreateOrUpdate(val characterId: Int? = null)
+data class CharacterCreateOrUpdate(val characterId: String? = null)
+
+@Serializable
+object CharacterImport
 
 @Serializable
 data class ItemDetails(val itemId: String)
@@ -65,6 +69,9 @@ fun DNDNavHost(
                 },
                 onOpenCharacterCreateDialog = {
                     navController.navigate(CharacterCreateOrUpdate())
+                },
+                onOpenCharacterImportDialog = {
+                    navController.navigate(CharacterImport)
                 }
             )
         }
@@ -118,6 +125,17 @@ fun DNDNavHost(
                 characterId = backStackEntry.toRoute<CharacterCreateOrUpdate>().characterId,
                 closeDialog = { navController.navigateUp() },
                 onSubmit = { character ->
+                    val updatedCharacter = viewModel.updateOrCreateCharacter(character)
+                    navController.navigate(CharacterDetails(updatedCharacter.id!!))
+                }
+            )
+        }
+
+        dialog<CharacterImport> {
+            CharacterImportDialog(
+                viewModel = viewModel,
+                closeDialog = { navController.navigateUp() },
+                onImportComplete = { character ->
                     val updatedCharacter = viewModel.updateOrCreateCharacter(character)
                     navController.navigate(CharacterDetails(updatedCharacter.id!!))
                 }

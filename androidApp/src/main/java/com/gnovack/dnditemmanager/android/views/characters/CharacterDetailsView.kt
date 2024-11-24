@@ -1,10 +1,12 @@
 package com.gnovack.dnditemmanager.android.views.characters
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,19 +35,22 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.compose.AsyncImage
 import com.gnovack.dnditemmanager.android.components.ItemRow
 import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
+import com.gnovack.dnditemmanager.services.Character
 import com.gnovack.dnditemmanager.services.Item
 
 
 @Composable
 fun CharacterDetailsView(
     viewModel: DNDApiViewModel = viewModel(),
-    characterId: Int,
+    characterId: String,
     onNavigateToItemList: () -> Unit,
     onOpenCharacterUpdateDialog: () -> Unit,
     onNavigateToCharacterList: () -> Unit,
@@ -78,34 +83,82 @@ fun CharacterDetailsView(
                 )
                 .padding(horizontal = 8.dp, vertical = 16.dp),
         ) {
-            Column(
-                modifier = Modifier
-                    .height(70.dp)
-                    .width(70.dp)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                Icon(
-                    Icons.Default.Person,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            }
+                Column(
+                    modifier = Modifier
+                        .height(70.dp)
+                        .width(70.dp)
+                ) {
+                    if (character.avatarUrl != null) AsyncImage(
+                        model = character.avatarUrl,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .fillMaxHeight()
+                    ) else Icon(
+                        Icons.Default.Person,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .fillMaxSize()
+                            .background(Color.LightGray)
+                            .padding(16.dp)
+                    )
+                }
 
-            Column() {
-                Text(
-                    character.name,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = MaterialTheme.typography.headlineLarge.fontSize,
-                )
-                Text(
-                    character.race,
-                    fontSize = MaterialTheme.typography.headlineSmall.fontSize,
-                )
+                Column() {
+                    Text(
+                        character.name,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = MaterialTheme.typography.headlineLarge.fontSize,
+                    )
+                    Text(
+                        character.race,
+                        fontSize = MaterialTheme.typography.headlineSmall.fontSize,
+                    )
+                }
+
             }
 
             Text(
                 "${character.dndClass} (${character.level})",
                 fontSize = MaterialTheme.typography.headlineSmall.fontSize,
             )
+        }
+
+        if (character.strengthScore != null) Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    BorderStroke(2.dp, Color.LightGray),
+                    RoundedCornerShape(16.dp),
+                )
+                .padding(8.dp)
+        ) {
+            with(character) {
+                val attributeMap = mapOf(
+                    ("STR" to strengthScore),
+                    ("DEX" to dexterityScore),
+                    ("CON" to constitutionScore),
+                    ("INT" to intelligenceScore),
+                    ("WIS" to wisdomScore),
+                    ("CHA" to charismaScore),
+                )
+
+                attributeMap.entries.forEach { (label, value) ->
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Text(label, fontWeight = FontWeight.Bold)
+                        Text("$value")
+                    }
+                }
+            }
         }
 
         Row(

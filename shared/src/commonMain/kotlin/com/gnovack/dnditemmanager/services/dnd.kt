@@ -7,11 +7,16 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.request.get
+import io.ktor.client.request.post
+import io.ktor.client.request.setBody
+import io.ktor.http.ContentType
 import io.ktor.http.URLProtocol
 import io.ktor.http.appendPathSegments
+import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNamingStrategy
 
@@ -23,6 +28,8 @@ class DNDApiClient(engine: HttpClientEngine = platformEngine, baseHost: String =
         expectSuccess = true
 
         defaultRequest {
+            contentType(ContentType.Application.Json)
+
             url {
                 host = baseHost
                 protocol = URLProtocol.byName[BuildKonfig.BASE_API_PROTOCOL]!!
@@ -77,6 +84,19 @@ class DNDApiClient(engine: HttpClientEngine = platformEngine, baseHost: String =
             }
         }.body()
     }
+
+    suspend fun importCharacter(characterId: String): Character {
+        @Serializable
+        data class RequestBody(val characterDndbeyondId: String)
+
+        return client.post {
+            url {
+                appendPathSegments("characters", "dndbeyond_import")
+            }
+
+            setBody(RequestBody(characterId))
+        }.body()
+    }
 }
 
 @Serializable
@@ -102,3 +122,56 @@ data class Item(
     }
 }
 
+@Serializable
+data class Character(
+    var id: String? = null,
+    val avatarUrl: String? = null,
+    val name: String,
+    val race: String,
+    val dndClass: String,
+    val level: Int,
+    val strengthScore: Int? = null,
+    val dexterityScore: Int? = null,
+    val constitutionScore: Int? = null,
+    val intelligenceScore: Int? = null,
+    val wisdomScore: Int? = null,
+    val charismaScore: Int? = null,
+    var inventory: List<Item> = listOf(),
+) {
+    @Transient
+    val nameField = FormField(name) {
+        value -> value.isNotBlank()
+    }
+    @Transient
+    val raceField = FormField(race) {
+        value -> value.isNotBlank()
+    }
+    @Transient
+    val classField = FormField(dndClass) {
+        value -> value.isNotBlank()
+    }
+    @Transient
+    val levelField = FormField(level) {
+        value -> value in 1..20
+    }
+    @Transient
+    val isValid = listOf(
+        nameField,
+        raceField,
+        classField,
+        levelField,
+    ).all { it.isValid }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as Character
+
+        return id == other.id
+    }
+
+    override fun hashCode(): Int {
+        return id?.hashCode() ?: 0
+    }
+}

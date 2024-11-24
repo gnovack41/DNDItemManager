@@ -35,12 +35,13 @@ import com.gnovack.dnditemmanager.android.components.RoundedTextField
 import com.gnovack.dnditemmanager.android.components.SelectInput
 import com.gnovack.dnditemmanager.android.getObjectFromJsonAssetFile
 import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
+import com.gnovack.dnditemmanager.services.Character
 
 
 @Composable
 fun CharacterCreateOrUpdateDialog(
     viewModel: DNDApiViewModel = viewModel(),
-    characterId: Int? = null,
+    characterId: String? = null,
     closeDialog: () -> Unit,
     onSubmit: (Character) -> Unit,
 ) {

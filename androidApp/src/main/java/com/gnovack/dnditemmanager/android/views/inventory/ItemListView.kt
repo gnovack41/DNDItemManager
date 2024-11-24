@@ -49,7 +49,7 @@ import com.gnovack.dnditemmanager.services.Item
 @Composable
 fun ItemListView(
     viewModel: DNDApiViewModel = viewModel(),
-    characterId: Int,
+    characterId: String,
     onNavigateToCharacterList: () -> Unit,
     onNavigateToItemDetails: (Item) -> Unit,
 ) {

@@ -2,10 +2,12 @@ package com.gnovack.dnditemmanager.android.views.characters
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -34,18 +36,22 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil3.compose.AsyncImage
 import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
+import com.gnovack.dnditemmanager.services.Character
 
 
 @Composable
 fun CharacterListView(
     viewModel: DNDApiViewModel = viewModel(),
-    onNavigateToCharacterDetails: (Int) -> Unit,
+    onNavigateToCharacterDetails: (String) -> Unit,
     onOpenCharacterCreateDialog: () -> Unit,
+    onOpenCharacterImportDialog: () -> Unit,
 ) {
     val characterList by viewModel.characterList.collectAsState()
     var selectedCharacters by rememberSaveable {
@@ -79,7 +85,19 @@ fun CharacterListView(
                     verticalAlignment = Alignment.CenterVertically,
                 ){
                     Icon(Icons.Default.Add, contentDescription = null)
-                    Text(text = "Add Character")
+                    Text(text = "Create Character")
+                }
+            }
+            Button(
+                onClick = onOpenCharacterImportDialog,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row (
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ){
+                    Icon(Icons.Default.Person, contentDescription = null)
+                    Text(text = "Import from DNDBeyond")
                 }
             }
             LazyColumn(
@@ -134,10 +152,20 @@ fun CharacterListItem(
                         .height(70.dp)
                         .width(70.dp)
                 ) {
-                    Icon(
+                    if (character.avatarUrl != null) AsyncImage(
+                        model = character.avatarUrl,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .fillMaxHeight()
+                    ) else Icon(
                         Icons.Default.Person,
                         contentDescription = null,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .fillMaxSize()
+                            .background(Color.LightGray)
+                            .padding(16.dp)
                     )
                 }
             },

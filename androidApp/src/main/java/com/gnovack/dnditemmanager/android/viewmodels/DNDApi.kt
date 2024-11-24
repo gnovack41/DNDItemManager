@@ -3,9 +3,11 @@ package com.gnovack.dnditemmanager.android.viewmodels
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.gnovack.dnditemmanager.android.views.characters.Character
+import com.gnovack.dnditemmanager.services.Character
 import com.gnovack.dnditemmanager.services.DNDApiClient
 import com.gnovack.dnditemmanager.services.Item
+import io.ktor.client.call.body
+import io.ktor.client.plugins.ClientRequestException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,7 +17,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import java.io.File
+import java.util.UUID
 
 
 private const val CHARACTER_LIST_FILE = "characterList.json"
@@ -31,6 +35,7 @@ class AsyncStateHandler<P, T>(
         val isLoading: Boolean = false,
         val isFailed: Boolean = false,
         val error: Exception? = null,
+        val errorBody: JsonObject? = null,
         internal var job: Job? = null,
     )
 
@@ -45,6 +50,7 @@ class AsyncStateHandler<P, T>(
                 isLoading = isLoading,
                 isFailed = false,
                 error = null,
+                errorBody = null,
                 job = null,
             )
         }
@@ -60,7 +66,12 @@ class AsyncStateHandler<P, T>(
                 _uiState.update { state -> state.copy(isSuccessful = true, data = request(args.toList())) }
                 onComplete()
             } catch (e: Exception) {
-                _uiState.update { state -> state.copy(isFailed = true, error = e) }
+                var errorBody: JsonObject? = null
+                if (e is ClientRequestException) {
+                    errorBody = e.response.body()
+                }
+
+                _uiState.update { state -> state.copy(isFailed = true, error = e, errorBody = errorBody) }
             }
 
             _uiState.update { state -> state.copy(isLoading = false) }
@@ -74,13 +85,10 @@ class AsyncStateHandler<P, T>(
 class DNDApiViewModel: ViewModel() {
     val client = DNDApiClient()
 
-    private val currentMaxCharacterId: Int
-        get() = characterList.value.maxOfOrNull { it.id ?: 0 } ?: 0
-
     private var _characterList: MutableStateFlow<List<Character>> = MutableStateFlow(listOf())
     val characterList: StateFlow<List<Character>> = _characterList.asStateFlow()
 
-    fun getCharacterById(id: Int?): Character? {
+    fun getCharacterById(id: String?): Character? {
         return characterList.value.find { character -> character.id == id }?.copy()
     }
 
@@ -88,7 +96,7 @@ class DNDApiViewModel: ViewModel() {
         val existingCharacterIndex = characterList.value.indexOf(character)
 
         if (existingCharacterIndex == -1) {
-            character.id = currentMaxCharacterId + 1
+            if (character.id == null) character.id = UUID.randomUUID().toString()
             _characterList.value += character
         } else {
             _characterList.update { list ->
@@ -106,7 +114,7 @@ class DNDApiViewModel: ViewModel() {
         _characterList.value -= characters
     }
 
-    fun addItemsToCharacterInventory(characterId: Int, items: List<Item>) {
+    fun addItemsToCharacterInventory(characterId: String, items: List<Item>) {
         _characterList.update { list ->
             val index = list.indexOfFirst { it.id == characterId }
 
