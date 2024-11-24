@@ -13,6 +13,7 @@ import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
+import com.gnovack.dnditemmanager.android.views.TestServerUrlView
 import com.gnovack.dnditemmanager.android.views.characters.CharacterCreateOrUpdateDialog
 import com.gnovack.dnditemmanager.android.views.characters.CharacterDetailsView
 import com.gnovack.dnditemmanager.android.views.characters.CharacterImportDialog
@@ -20,6 +21,10 @@ import com.gnovack.dnditemmanager.android.views.characters.CharacterListView
 import com.gnovack.dnditemmanager.android.views.inventory.ItemDetailsView
 import com.gnovack.dnditemmanager.android.views.inventory.ItemListView
 import kotlinx.serialization.Serializable
+
+
+@Serializable
+object TestServerUrl
 
 
 @Serializable
@@ -52,7 +57,11 @@ fun DNDNavHost(
 ) {
     NavHost(
         navController = navController,
-        startDestination = CharacterList,
+        startDestination = (
+            @Suppress("KotlinConstantConditions")
+            if (BuildConfig.BUILD_TYPE == "mobile-debug") TestServerUrl
+            else CharacterList
+        ),
         enterTransition = {
             fadeIn(animationSpec = tween(300))
         },
@@ -61,6 +70,16 @@ fun DNDNavHost(
         },
         modifier = modifier,
     ) {
+        composable<TestServerUrl> {
+            TestServerUrlView(
+                onServerUrlSubmitted = { serverUrl ->
+                    viewModel.setServerClientBaseUrl(serverUrl)
+                    navController.navigate(CharacterList)
+                }
+            )
+
+        }
+
         composable<CharacterList> {
             CharacterListView(
                 viewModel = viewModel,

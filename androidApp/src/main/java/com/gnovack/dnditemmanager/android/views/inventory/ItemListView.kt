@@ -223,7 +223,7 @@ fun ItemList(
     onAddToInventory: (List<Item>) -> Unit,
     onItemClick: (Item) -> Unit,
 ) {
-    var selectedItems by rememberSaveable { mutableStateOf(existingInventory.toSet()) }
+    var selectedItems by remember { mutableStateOf(existingInventory.toSet()) }
 
     Scaffold(
         floatingActionButton = {

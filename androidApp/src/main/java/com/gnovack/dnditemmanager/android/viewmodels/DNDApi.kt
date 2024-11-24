@@ -1,8 +1,13 @@
 package com.gnovack.dnditemmanager.android.viewmodels
 
 import android.content.Context
+import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.SavedStateHandleSaveableApi
+import androidx.lifecycle.viewmodel.compose.saveable
+import com.gnovack.dnditemmanager.android.BuildConfig
 import com.gnovack.dnditemmanager.services.Character
 import com.gnovack.dnditemmanager.services.DNDApiClient
 import com.gnovack.dnditemmanager.services.Item
@@ -82,11 +87,25 @@ class AsyncStateHandler<P, T>(
 }
 
 
-class DNDApiViewModel: ViewModel() {
-    val client = DNDApiClient()
+@OptIn(SavedStateHandleSaveableApi::class)
+class DNDApiViewModel(savedStateHandle: SavedStateHandle): ViewModel() {
+    private var testServerUrl: String by savedStateHandle.saveable {
+        mutableStateOf("")
+    }
+
+    var client = DNDApiClient(baseHostOverride = testServerUrl.ifBlank { null })
+        private set
 
     private var _characterList: MutableStateFlow<List<Character>> = MutableStateFlow(listOf())
     val characterList: StateFlow<List<Character>> = _characterList.asStateFlow()
+
+    fun setServerClientBaseUrl(serverUrl: String) {
+        @Suppress("KotlinConstantConditions")
+        if (BuildConfig.BUILD_TYPE != "mobile-debug") return
+
+        testServerUrl = serverUrl
+        client = DNDApiClient(baseHostOverride = serverUrl.ifBlank { null })
+    }
 
     fun getCharacterById(id: String?): Character? {
         return characterList.value.find { character -> character.id == id }?.copy()

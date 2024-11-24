@@ -22,7 +22,7 @@ import kotlinx.serialization.json.JsonNamingStrategy
 
 expect val platformEngine: HttpClientEngine
 
-class DNDApiClient(engine: HttpClientEngine = platformEngine, baseHost: String = BuildKonfig.BASE_API_HOST) {
+class DNDApiClient(engine: HttpClientEngine = platformEngine, baseHostOverride: String? = null) {
     @OptIn(ExperimentalSerializationApi::class)
     private val client = HttpClient(engine) {
         expectSuccess = true
@@ -31,9 +31,14 @@ class DNDApiClient(engine: HttpClientEngine = platformEngine, baseHost: String =
             contentType(ContentType.Application.Json)
 
             url {
-                host = baseHost
-                protocol = URLProtocol.byName[BuildKonfig.BASE_API_PROTOCOL]!!
-                port = BuildKonfig.BASE_API_PORT.toInt()
+                if (baseHostOverride == null){
+                    host = BuildKonfig.BASE_API_HOST
+                    protocol = URLProtocol.byName[BuildKonfig.BASE_API_PROTOCOL]!!
+                    port = BuildKonfig.BASE_API_PORT.toInt()
+                } else {
+                    host = baseHostOverride.split("/").last()
+                    protocol = URLProtocol.HTTPS
+                }
             }
         }
 

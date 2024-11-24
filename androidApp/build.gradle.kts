@@ -28,6 +28,10 @@ android {
         getByName("release") {
             isMinifyEnabled = false
         }
+        create("mobile-debug") {
+            isDebuggable = true
+            signingConfig = signingConfigs.getByName("debug")
+        }
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8

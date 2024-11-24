@@ -65,13 +65,17 @@ fun CharacterCreateOrUpdateDialog(
         getObjectFromJsonAssetFile<List<String>>(context, "races.json")
     } }
 
-    val newCharacter = Character(
+    val newCharacter = existingCharacter?.copy(
+        name = characterName,
+        race = characterRace,
+        dndClass = characterClass,
+        level = characterLevel ?: 0,
+    ) ?: Character(
         id = existingCharacter?.id,
         name = characterName,
         race = characterRace,
         dndClass = characterClass,
         level = characterLevel ?: 0,
-        inventory = existingCharacter?.inventory ?: emptyList(),
     )
 
     Dialog(onDismissRequest = closeDialog) {
