@@ -86,7 +86,7 @@ fun CharacterCreateOrUpdateDialog(
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "Create New Character",
+                    text = "${if (existingCharacter != null) "Update" else "Create"} Character",
                     fontWeight = FontWeight.Bold,
                     fontSize = TextUnit(24f, TextUnitType.Sp)
                 )

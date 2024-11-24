@@ -16,16 +16,21 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.Button
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.gnovack.dnditemmanager.android.components.ItemRow
 import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
+import com.gnovack.dnditemmanager.services.Item
 
 
 @Composable
@@ -43,8 +49,10 @@ fun CharacterDetailsView(
     onNavigateToItemList: () -> Unit,
     onOpenCharacterUpdateDialog: () -> Unit,
     onNavigateToCharacterList: () -> Unit,
+    onNavigateToItemDetails: (Item) -> Unit,
 ) {
     val character: Character by remember { derivedStateOf { viewModel.getCharacterById(characterId)!! } }
+    var inventory: List<Item> by remember { mutableStateOf(character.inventory) }
 
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -130,7 +138,37 @@ fun CharacterDetailsView(
                 }
             }
         }
-        Column {
+        InventoryList(
+            inventory = inventory,
+            onNavigateToItemDetails = onNavigateToItemDetails,
+            onItemsRemoved = { updatedItems ->
+                viewModel.addItemsToCharacterInventory(characterId, updatedItems)
+                inventory = updatedItems
+            },
+        )
+    }
+}
+
+@Composable
+fun InventoryList(
+    modifier: Modifier = Modifier,
+    inventory: List<Item>,
+    onNavigateToItemDetails: (Item) -> Unit,
+    onItemsRemoved: (List<Item>) -> Unit,
+) {
+    var ownedItems: Set<Item> by remember { mutableStateOf(inventory.toSet()) }
+    Scaffold(
+        floatingActionButton = {
+            if (ownedItems.size != inventory.size) ExtendedFloatingActionButton(
+                text = { Text(text = "Remove Items") },
+                icon = { Icon(Icons.Default.Clear, contentDescription = null) },
+                shape = RoundedCornerShape(16.dp),
+                onClick = { onItemsRemoved(ownedItems.toList()) },
+            )
+        },
+        modifier = modifier,
+    ) { innerPadding ->
+        Column(modifier = Modifier.padding(innerPadding)) {
             Text(
                 "Inventory",
                 fontSize = MaterialTheme.typography.labelLarge.fontSize,
@@ -140,10 +178,18 @@ fun CharacterDetailsView(
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                items(character.inventory) { item ->
+                items(inventory) { item ->
                     ItemRow(
                         item = item,
-                        onLongClick = {},
+                        onClick = { onNavigateToItemDetails(item) },
+                        onLongClick = {
+                            if (item in ownedItems) {
+                                ownedItems -= item
+                            } else {
+                                ownedItems += item
+                            }
+                        },
+                        selected = item !in ownedItems,
                     )
                 }
             }

@@ -16,6 +16,7 @@ import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
 import com.gnovack.dnditemmanager.android.views.characters.CharacterCreateOrUpdateDialog
 import com.gnovack.dnditemmanager.android.views.characters.CharacterDetailsView
 import com.gnovack.dnditemmanager.android.views.characters.CharacterListView
+import com.gnovack.dnditemmanager.android.views.inventory.ItemDetailsView
 import com.gnovack.dnditemmanager.android.views.inventory.ItemListView
 import kotlinx.serialization.Serializable
 
@@ -34,6 +35,9 @@ data class ItemList(val characterId: Int)
 
 @Serializable
 data class CharacterCreateOrUpdate(val characterId: Int? = null)
+
+@Serializable
+data class ItemDetails(val itemId: String)
 
 
 @Composable
@@ -79,6 +83,9 @@ fun DNDNavHost(
                 },
                 onNavigateToCharacterList = {
                     navController.navigate(CharacterList)
+                },
+                onNavigateToItemDetails = { item ->
+                    navController.navigate(ItemDetails(item.id))
                 }
             )
         }
@@ -91,7 +98,17 @@ fun DNDNavHost(
                 characterId = characterId,
                 onNavigateToCharacterList = {
                     navController.navigate(CharacterDetails(characterId))
+                },
+                onNavigateToItemDetails = { item ->
+                    navController.navigate(ItemDetails(item.id))
                 }
+            )
+        }
+
+        composable<ItemDetails> { backStackEntry ->
+            ItemDetailsView(
+                itemId = backStackEntry.toRoute<ItemDetails>().itemId,
+                onNavigateBack = { navController.navigateUp() },
             )
         }
 

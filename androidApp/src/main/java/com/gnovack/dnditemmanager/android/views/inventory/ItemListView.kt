@@ -51,26 +51,27 @@ fun ItemListView(
     viewModel: DNDApiViewModel = viewModel(),
     characterId: Int,
     onNavigateToCharacterList: () -> Unit,
+    onNavigateToItemDetails: (Item) -> Unit,
 ) {
-    val currentCharacter by remember {
-        derivedStateOf { viewModel.getCharacterById(characterId)!! }
-    }
+    val currentCharacter by remember { derivedStateOf {
+        viewModel.getCharacterById(characterId)!!
+    } }
 
-    val itemAsyncStateHandler by remember {
-        derivedStateOf { viewModel.useAsyncUiState { args: List<String?> ->
+    val itemAsyncStateHandler by remember { derivedStateOf {
+        viewModel.useAsyncUiState { args: List<String?> ->
             val search: String? = args.getOrNull(0)
             val rarity: String? = args.getOrNull(1)
             val source: String? = args.getOrNull(2)
 
             viewModel.client.getItems(search = search, rarity = rarity, source = source)
-        } }
-    }
+        }
+    } }
 
-    val itemsFilterAsyncStateHandler by remember {
-        derivedStateOf { viewModel.useAsyncUiState<Nothing, Map<String, List<String>>> {
+    val itemsFilterAsyncStateHandler by remember { derivedStateOf {
+        viewModel.useAsyncUiState<Nothing, Map<String, List<String>>> {
             mapOf("sources" to viewModel.client.getSources(), "rarities" to viewModel.client.getRarities())
-        } }
-    }
+        }
+    } }
 
     val itemsRequestState by itemAsyncStateHandler.uiState.collectAsState()
     val itemFiltersRequestState by itemsFilterAsyncStateHandler.uiState.collectAsState()
@@ -121,6 +122,7 @@ fun ItemListView(
                     viewModel.addItemsToCharacterInventory(characterId, newItems)
                     onNavigateToCharacterList()
                 },
+                onItemClick = { item -> onNavigateToItemDetails(item) }
             )
         } else if (itemsRequestState.isFailed) {
             Text(text = "An error has occurred")
@@ -219,6 +221,7 @@ fun ItemList(
     items: List<Item>,
     existingInventory: List<Item>,
     onAddToInventory: (List<Item>) -> Unit,
+    onItemClick: (Item) -> Unit,
 ) {
     var selectedItems by rememberSaveable { mutableStateOf(existingInventory.toSet()) }
 
@@ -236,11 +239,12 @@ fun ItemList(
             items(items) { item: Item ->
                 ItemRow(
                     item,
+                    onClick = { onItemClick(item) },
                     onLongClick = {
-                        if (it in selectedItems) {
-                            selectedItems -= it
+                        if (item in selectedItems) {
+                            selectedItems -= item
                         } else {
-                            selectedItems += it
+                            selectedItems += item
                         }
                     },
                     selected = item in selectedItems,

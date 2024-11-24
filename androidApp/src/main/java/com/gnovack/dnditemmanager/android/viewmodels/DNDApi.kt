@@ -71,7 +71,6 @@ class AsyncStateHandler<P, T>(
 }
 
 
-
 class DNDApiViewModel: ViewModel() {
     val client = DNDApiClient()
 
@@ -82,7 +81,7 @@ class DNDApiViewModel: ViewModel() {
     val characterList: StateFlow<List<Character>> = _characterList.asStateFlow()
 
     fun getCharacterById(id: Int?): Character? {
-        return characterList.value.find { character -> character.id == id }
+        return characterList.value.find { character -> character.id == id }?.copy()
     }
 
     fun updateOrCreateCharacter(character: Character): Character {

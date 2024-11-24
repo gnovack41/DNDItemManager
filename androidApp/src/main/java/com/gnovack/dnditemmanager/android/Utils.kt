@@ -46,3 +46,16 @@ inline fun <reified T> getObjectFromJsonAssetFile(context: Context, fileName: St
     val jsonString = context.assets.readAssetsFileAsString(fileName)
     return Json.decodeFromString<T>(jsonString)
 }
+
+
+private val RARITY_TO_DISPLAY_NAME = mapOf(
+    Pair("common", "Common"),
+    Pair("uncommon", "Uncommon"),
+    Pair("rare", "Rare"),
+    Pair("very_rare", "Very Rare"),
+    Pair("legendary", "Legendary"),
+    Pair("artifact", "Artifact"),
+    Pair("varies", "Varies"),
+)
+
+fun rarityToDisplayName(rarity: String): String = RARITY_TO_DISPLAY_NAME.getOrDefault(rarity, "Unknown")

@@ -1,6 +1,5 @@
 package com.gnovack.dnditemmanager.android.components
 
-import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -25,18 +24,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.gnovack.dnditemmanager.android.rarityToDisplayName
 import com.gnovack.dnditemmanager.services.Item
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ItemRow(item: Item, selected: Boolean = false, onLongClick: (Item) -> Unit) {
-    val context = LocalContext.current
-
+fun ItemRow(
+    item: Item,
+    selected: Boolean = false,
+    onLongClick: () -> Unit,
+    onClick: () -> Unit,
+) {
     Surface(
         border = BorderStroke(
             if (selected) 3.dp else 1.dp,
@@ -44,8 +46,8 @@ fun ItemRow(item: Item, selected: Boolean = false, onLongClick: (Item) -> Unit) 
         ),
         shape = RoundedCornerShape(16.dp),
         modifier = Modifier.combinedClickable(
-            onClick = { Toast.makeText(context, "Open ${item.name}", Toast.LENGTH_SHORT).show() },
-            onLongClick = { onLongClick(item) }
+            onClick = { onClick() },
+            onLongClick = { onLongClick() }
         )
     ) {
         ListItem(
@@ -57,8 +59,7 @@ fun ItemRow(item: Item, selected: Boolean = false, onLongClick: (Item) -> Unit) 
                         .width(70.dp), verticalArrangement = Arrangement.Center
                 ) {
                     if (item.imageUrl != null) AsyncImage(
-                        model = item.imageUrl
-                            ?: "https://t3.ftcdn.net/jpg/04/60/01/36/360_F_460013622_6xF8uN6ubMvLx0tAJECBHfKPoNOR5cRa.jpg",
+                        model = item.imageUrl,
                         contentDescription = null,
                         modifier = Modifier
                             .clip(RoundedCornerShape(8.dp))
@@ -80,8 +81,8 @@ fun ItemRow(item: Item, selected: Boolean = false, onLongClick: (Item) -> Unit) 
                     verticalArrangement = Arrangement.SpaceBetween,
                     horizontalAlignment = Alignment.End
                 ) {
-                    Text(text = item.rarity?.replace('_', ' ')?.replaceFirstChar(Char::titlecaseChar) ?: "Unknown")
-                    Text(text = item.source?.replace('-', ' ')?.replaceFirstChar(Char::titlecaseChar) ?: "Unknown")
+                    Text(text = rarityToDisplayName(item.rarity!!))
+                    Text(text = item.source ?: "Unknown")
                 }
             },
             supportingContent = {
