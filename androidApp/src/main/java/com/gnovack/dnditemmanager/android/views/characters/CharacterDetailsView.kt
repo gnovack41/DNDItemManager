@@ -59,6 +59,11 @@ fun CharacterDetailsView(
     val character: Character by remember { derivedStateOf { viewModel.getCharacterById(characterId)!! } }
     var inventory: List<Item> by remember { mutableStateOf(character.inventory) }
 
+    fun updateInventory(newInventory: List<Item>) {
+        viewModel.addItemsToCharacterInventory(characterId, newInventory)
+        inventory = newInventory
+    }
+
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.fillMaxSize(),
@@ -195,8 +200,7 @@ fun CharacterDetailsView(
             inventory = inventory,
             onNavigateToItemDetails = onNavigateToItemDetails,
             onItemsRemoved = { updatedItems ->
-                viewModel.addItemsToCharacterInventory(characterId, updatedItems)
-                inventory = updatedItems
+                updateInventory(updatedItems)
             },
         )
     }

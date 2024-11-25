@@ -55,4 +55,12 @@ private val RARITY_TO_DISPLAY_NAME = mapOf(
 
 fun rarityToDisplayName(rarity: String): String = RARITY_TO_DISPLAY_NAME.getOrDefault(rarity, "Unknown")
 
-fun parseDndBeyondCharacterUrl(url: String) = url.replace(" ", "").split("/").last()
+fun parseDndBeyondCharacterIdFromUrl(url: String): String {
+    val urlParts = url.replace(" ", "").split("/")
+    val charactersIndex = urlParts.indexOf("characters")
+
+    if (urlParts.size < 2 || charactersIndex == -1) return ""
+
+    return urlParts[charactersIndex + 1]
+}
+

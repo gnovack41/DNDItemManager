@@ -47,17 +47,9 @@ class AsyncStateHandler<P, T>(
     private val _uiState: MutableStateFlow<AsyncUiState<T>> = MutableStateFlow(AsyncUiState())
     val uiState: StateFlow<AsyncUiState<T>> = _uiState.asStateFlow()
 
-    private fun resetUiState(isLoading: Boolean = false) {
-        _uiState.update { state ->
-            state.copy(
-                data = null,
-                isSuccessful = false,
-                isLoading = isLoading,
-                isFailed = false,
-                error = null,
-                errorBody = null,
-                job = null,
-            )
+    fun resetUiState(isLoading: Boolean) {
+        _uiState.update {
+            AsyncUiState(isLoading = isLoading)
         }
     }
 
@@ -73,7 +65,7 @@ class AsyncStateHandler<P, T>(
             } catch (e: Exception) {
                 var errorBody: JsonObject? = null
                 if (e is ClientRequestException) {
-                    errorBody = e.response.body()
+                    errorBody = runCatching<JsonObject> { e.response.body() }.getOrNull()
                 }
 
                 _uiState.update { state -> state.copy(isFailed = true, error = e, errorBody = errorBody) }
