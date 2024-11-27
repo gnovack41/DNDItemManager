@@ -17,10 +17,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AccountBox
 import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -28,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -44,6 +49,7 @@ import coil3.compose.AsyncImage
 import com.gnovack.dnditemmanager.android.components.ItemRow
 import com.gnovack.dnditemmanager.android.viewmodels.DNDApiViewModel
 import com.gnovack.dnditemmanager.services.Character
+import com.gnovack.dnditemmanager.services.DNDApiClient.SyncItemForm
 import com.gnovack.dnditemmanager.services.Item
 
 
@@ -59,6 +65,24 @@ fun CharacterDetailsView(
     val character: Character by remember { derivedStateOf { viewModel.getCharacterById(characterId)!! } }
     var inventory: List<Item> by remember { mutableStateOf(character.inventory) }
 
+    val syncItemsAsyncHandler by remember { derivedStateOf {
+        viewModel.useAsyncUiState<Nothing, Unit> {
+            if (character.dndbeyondId == null) return@useAsyncUiState
+
+            viewModel.client.addItemToCharacter(
+                character = character,
+                items = inventory.map { item ->
+                    SyncItemForm(
+                        dndbeyondId = item.dndbeyondId!!,
+                        quantity = 1,
+                    )
+                },
+            )
+        }
+    }}
+
+    val syncItemsAsyncState by syncItemsAsyncHandler.uiState.collectAsState()
+
     fun updateInventory(newInventory: List<Item>) {
         viewModel.addItemsToCharacterInventory(characterId, newInventory)
         inventory = newInventory
@@ -68,15 +92,45 @@ fun CharacterDetailsView(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.fillMaxSize(),
     ) {
-        Button(onClick = onNavigateToCharacterList) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                Text(text = "Back")
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+        ){
+            Button(onClick = onNavigateToCharacterList) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                    Text(text = "Back")
+                }
             }
+
+            if (syncItemsAsyncState.isLoading) Text("Syncing...")
+            else if (syncItemsAsyncState.isFailed) Text("Sync Error")
+
+            if (character.dndbeyondId != null) Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (syncItemsAsyncState.isSuccessful) Icon(Icons.Default.CheckCircle, contentDescription = null)
+                Button(
+                    onClick = { syncItemsAsyncHandler.executeRequest() },
+                    enabled = !syncItemsAsyncState.isLoading,
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.Refresh, contentDescription = null)
+                        Text(text = "Sync Items")
+                    }
+                }
+            }
+
         }
+
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -162,6 +216,24 @@ fun CharacterDetailsView(
                         Text(label, fontWeight = FontWeight.Bold)
                         Text("$value")
                     }
+                }
+            }
+        }
+
+        if (character.dndbeyondId != null){
+            val uriHandler = LocalUriHandler.current
+            Button(
+                onClick = {
+                    uriHandler.openUri("https://dndbeyond.com/characters/${character.dndbeyondId}")
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Row (
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ){
+                    Icon(Icons.Default.AccountBox, contentDescription = null)
+                    Text(text = "Open in DNDBeyond")
                 }
             }
         }

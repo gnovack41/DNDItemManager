@@ -255,6 +255,4 @@ fun CharacterImportConfirmSection(
             Text("Confirm")
         }
     }
-
-
 }

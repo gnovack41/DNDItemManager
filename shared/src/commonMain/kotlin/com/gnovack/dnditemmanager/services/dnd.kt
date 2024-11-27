@@ -31,14 +31,15 @@ class DNDApiClient(engine: HttpClientEngine = platformEngine, baseHostOverride: 
             contentType(ContentType.Application.Json)
 
             url {
-                if (baseHostOverride == null){
-                    host = BuildKonfig.BASE_API_HOST
-                    protocol = URLProtocol.byName[BuildKonfig.BASE_API_PROTOCOL]!!
-                    port = BuildKonfig.BASE_API_PORT.toInt()
-                } else {
-                    host = baseHostOverride.split("/").last()
-                    protocol = URLProtocol.HTTPS
-                }
+                val urlParts = (baseHostOverride ?: BuildKonfig.BASE_API_URL).split("://")
+                val hostAndPort = urlParts.last()
+                val apiHost = hostAndPort.split(':')[0]
+                val apiPort: Int? = hostAndPort.split(':').getOrNull(1)?.toInt()
+
+                protocol = URLProtocol.byName[urlParts.first()]!!
+                host = apiHost
+
+                apiPort?.let { port = it }
             }
         }
 
@@ -102,7 +103,33 @@ class DNDApiClient(engine: HttpClientEngine = platformEngine, baseHostOverride: 
             setBody(RequestBody(characterId))
         }.body()
     }
+
+    @Serializable
+    data class SyncItemForm(
+        val dndbeyondId: String,
+        val quantity: Int,
+    )
+
+    suspend fun addItemToCharacter(character: Character, items: List<SyncItemForm>) {
+        @Serializable
+        data class RequestBody(
+            val characterDndbeyondId: String,
+            val items: List<SyncItemForm>,
+        )
+
+        client.post {
+            url {
+                appendPathSegments("characters", "sync_items")
+            }
+
+            setBody(RequestBody(
+                characterDndbeyondId = character.dndbeyondId!!,
+                items = items,
+            ))
+        }
+    }
 }
+
 
 @Serializable
 data class Item(
@@ -112,6 +139,7 @@ data class Item(
     val source: String? = null,
     val description: String? = null,
     val imageUrl: String? = null,
+    val dndbeyondId: String? = null,
 ) {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -142,6 +170,7 @@ data class Character(
     val wisdomScore: Int? = null,
     val charismaScore: Int? = null,
     var inventory: List<Item> = listOf(),
+    val dndbeyondId: String? = null,
 ) {
     @Transient
     val nameField = FormField(name) {

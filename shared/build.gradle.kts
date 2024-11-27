@@ -11,9 +11,7 @@ buildkonfig {
     packageName = "com.gnovack.dnditemmanager"
 
     defaultConfigs {
-        buildConfigField(Type.STRING, "BASE_API_HOST", "10.0.2.2")
-        buildConfigField(Type.STRING, "BASE_API_PROTOCOL", "http")
-        buildConfigField(Type.STRING, "BASE_API_PORT", "8000")
+        buildConfigField(Type.STRING, "BASE_API_URL", "http://10.0.2.2:8000")
     }
 }
 
